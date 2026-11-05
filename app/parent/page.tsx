@@ -50,7 +50,8 @@ export default function ParentPage() {
   const child = snapshot.students.find((s) => s.id === activeChild) ?? children[0]!;
   const bus = snapshot.buses.find((b) => b.id === child.busId)!;
   const route = snapshot.routes.find((r) => r.id === child.routeId)!;
-  const driver = snapshot.drivers.find((d) => d.id === bus.driverId)!;
+  const driver = snapshot.drivers.find((d) => d.id === bus.driverId);
+  const attendantName = snapshot.attendants.find((a) => a.id === bus.attendantId)?.name ?? bus.attendantOnDuty;
   const stop = route.stops.find((s) => s.id === child.stopId)!;
   const nextStop = route.stops.find((s) => s.id === bus.nextStopId) ?? stop;
 
@@ -164,9 +165,10 @@ export default function ParentPage() {
 
                 <div className="mt-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Avatar name={driver.name} hue={driver.avatarHue} size={24} />
+                    <Avatar name={driver?.name ?? "Not assigned"} hue={driver?.avatarHue ?? 30} size={24} />
                     <p className="text-[11px] text-ink-500">
-                      {driver.name} · {snapshot.attendants.find((a) => a.id === bus.attendantId)?.name.split(" ")[0]}
+                      {driver?.name ?? "Driver not yet assigned"}
+                      {attendantName ? ` · ${attendantName.split(" ")[0]}` : ""}
                     </p>
                   </div>
                   <StatusPill status={bus.status} size="sm" />

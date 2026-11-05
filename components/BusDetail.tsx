@@ -17,8 +17,9 @@ export default function BusDetail({
 }) {
   const [tab, setTab] = useState<"trip" | "manifest" | "crew">("trip");
   const route = snapshot.routes.find((r) => r.id === bus.routeId)!;
-  const driver = snapshot.drivers.find((d) => d.id === bus.driverId)!;
-  const attendant = snapshot.attendants.find((a) => a.id === bus.attendantId)!;
+  const driver = snapshot.drivers.find((d) => d.id === bus.driverId);
+  const attendant = snapshot.attendants.find((a) => a.id === bus.attendantId);
+  const crewName = (name?: string, fallback = "—") => name ?? fallback;
   const manifest = snapshot.students.filter((s) => s.busId === bus.id);
   const elapsed =
     bus.direction === "morning" ? route.durationSec - bus.etaSec : bus.etaSec;
@@ -241,28 +242,30 @@ export default function BusDetail({
               <div className="card p-4">
                 <p className="label">Driver</p>
                 <div className="mt-2 flex items-center gap-3">
-                  <Avatar name={driver.name} hue={driver.avatarHue} size={40} />
+                  <Avatar name={crewName(driver?.name)} hue={driver?.avatarHue ?? 30} size={40} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13.5px] font-semibold">{driver.name}</p>
+                    <p className="text-[13.5px] font-semibold">{crewName(driver?.name, "Not assigned")}</p>
                     <p className="text-[11.5px] text-ink-500">
-                      {driver.yearsExp} yrs experience · ⭐ {driver.rating.toFixed(1)}
+                      {driver ? `${driver.yearsExp} yrs experience · ⭐ ${driver.rating.toFixed(1)}` : "Assign a driver from the Buses panel"}
                     </p>
-                    <p className="num mt-0.5 text-[11px] text-ink-400">{driver.phone}</p>
+                    <p className="num mt-0.5 text-[11px] text-ink-500">{driver?.phone ?? "—"}</p>
                   </div>
-                  <CallButton />
+                  {driver && <CallButton />}
                 </div>
               </div>
 
               <div className="card p-4">
                 <p className="label">Attendant</p>
                 <div className="mt-2 flex items-center gap-3">
-                  <Avatar name={attendant.name} hue={attendant.avatarHue} size={40} />
+                  <Avatar name={crewName(attendant?.name ?? bus.attendantOnDuty)} hue={attendant?.avatarHue ?? 200} size={40} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13.5px] font-semibold">{attendant.name}</p>
+                    <p className="text-[13.5px] font-semibold">
+                      {crewName(attendant?.name ?? bus.attendantOnDuty, "Not assigned")}
+                    </p>
                     <p className="text-[11.5px] text-ink-500">Boarding & handover</p>
-                    <p className="num mt-0.5 text-[11px] text-ink-400">{attendant.phone}</p>
+                    <p className="num mt-0.5 text-[11px] text-ink-500">{attendant?.phone ?? "—"}</p>
                   </div>
-                  <CallButton />
+                  {attendant && <CallButton />}
                 </div>
               </div>
 

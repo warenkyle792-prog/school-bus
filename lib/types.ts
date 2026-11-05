@@ -1,6 +1,13 @@
 export type LatLng = { lat: number; lng: number };
 
-export type RunStatus = "on_time" | "delayed" | "breakdown" | "finished";
+export type RunStatus =
+  | "on_time"
+  | "delayed"
+  | "breakdown"
+  | "finished"
+  /** registered with a tracker that has not reported yet */
+  | "offline";
+
 
 export type Stop = {
   id: string;
@@ -37,6 +44,12 @@ export type Bus = {
   parkState: "none" | "at_stop" | "at_school" | "stopped";
   etaSec: number;
   tripIndex: number;
+  /** true when the bus came from the school's own registration form */
+  registered?: boolean;
+  model?: string;
+  trackerId?: string;
+  attendantOnDuty?: string;
+  offlineReason?: string;
 };
 
 export type Driver = {

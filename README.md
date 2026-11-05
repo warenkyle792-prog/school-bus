@@ -29,6 +29,9 @@ status, trip log, notification preferences, and a direct line to the transport d
 **Driver app** — next stop with expected student count, tap-to-board roster that updates the school
 dashboard, full manifest grouped by stop, incident reporting and a panic button.
 
+**Fleet registration** — the console's **Buses** tab registers real vehicles and drivers and assigns
+them to routes. Registered buses join the same live GPS map as the simulated fleet, labelled `new`.
+
 **Simulated GPS** — `lib/sim.ts` moves every bus around a continuous round trip: park at the first
 stop → morning pickup run → handover at school → afternoon drop-off run → back out. Positions are
 continuous at both turnarounds, so nothing teleports. One scripted breakdown (R-04 on Lang'ata Road)
@@ -77,6 +80,33 @@ To change the default look, edit the `@theme` block in `app/globals.css`. To add
 `PALETTES` in `components/ThemePicker.tsx` — and mirror the token math in the boot script inside
 `app/layout.tsx`.
 
+## Registering buses and drivers
+
+Open **Console → Buses**. From there a school can:
+
+- **Register a bus** — plate, model, seats, route, attendant and GPS tracker ID
+- **Add a driver** — name, phone, licence number, years driving
+- **Assign a driver** to any bus from the inline dropdown, and move them between buses
+- **Send a bus to maintenance** and back, or **show it on the map**
+
+Plates are normalised and de-duplicated (`kdl 900z` → `KDL 900Z`), a driver can only be on one
+active bus at a time, and a bus whose tracker is blank is registered but shows as **Off GPS** rather
+than silently vanishing — that distinction matters when a school is chasing hardware.
+
+Data lives in `.data/fleet.json` (git-ignored) behind `/api/fleet`, with the registry cached in memory
+and writes serialised through a promise chain so concurrent submits can't corrupt the file. Writes go
+via temp-file + rename, so a crash mid-write can't truncate the registry.
+
+```
+GET    /api/fleet          → { buses, drivers }
+POST   /api/fleet          → { kind: "bus" | "driver", ... }
+PATCH  /api/fleet/:id      → { driverId } | { status: "active" | "maintenance" }
+DELETE /api/fleet/:id
+```
+
+Registration is validated **server-side** — plate format, seat count, route existence, duplicate plate
+and driver double-booking — because the form is not a security boundary once real auth is added.
+
 ## Architecture
 
 ```
@@ -122,7 +152,9 @@ The demo is deliberately self-contained. The gaps to close:
 
 1. **Real GPS ingest** — post device fixes to a placeholder route (`/api/ping`) and write them to a
    `bus_positions` table; replace `snapshotAt()` with a query. The tracker payload the simulator
-   models is just `{ busId, lat, lng, speedKph, heading, at }`.
+   models is just `{ busId, lat, lng, speedKph, heading, at }`, keyed by the `trackerId` captured at
+   registration. A registered bus with no recent fix should flip to `offline`, which the UI already
+   renders.
 2. **Auth** — Supabase Auth (or similar) with three roles: `school_admin`, `driver`, `guardian`.
    Guardians must only ever see their own children — enforce that with row-level security, not in the UI.
 3. **Realtime** — swap the polling hook for a Supabase Realtime subscription on `bus_positions`;

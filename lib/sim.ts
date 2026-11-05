@@ -10,7 +10,8 @@ import {
   STUDENTS,
 } from "./data";
 import { bearing, haversineKm, projectOntoPath } from "./geo";
-import type { Alert, Bus, Route, Snapshot, Stop, TripEvent } from "./types";
+import type { Alert, Bus, Driver, Route, Snapshot, Stop, TripEvent } from "./types";
+import type { RegisteredBus, RegisteredDriver } from "./store";
 
 /**
  * How fast simulated time runs compared with wall clock.
@@ -134,7 +135,30 @@ export function busRun(route: Route, phase: number, simSec: number): BusRun {
   return { tripIndex: Math.floor((simSec + phase * roundLen) / roundLen), direction: "morning", elapsedSec: 0, progress: 0, parked: "at_stop", frac: local / roundLen };
 }
 
-export type SnapshotOptions = { scale?: number; startedAtMs?: number };
+export type SnapshotOptions = {
+  scale?: number;
+  startedAtMs?: number;
+  /** buses and drivers the school registered through the console */
+  registeredBuses?: RegisteredBus[];
+  registeredDrivers?: RegisteredDriver[];
+};
+
+/** Deterministic pseudo-random in [0,1) from a string, so a registered bus
+ *  keeps the same "character" (fuel, odometer, phase) across requests. */
+function hash(str: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967296;
+}
+
+/** A tracker that was registered but never sent a fix is 'offline', which is a
+ *  different fact from "broken down" — schools need to chase the hardware. */
+function isOffline(bus: RegisteredBus): boolean {
+  return !bus.trackerId || bus.trackerId.trim().length < 3;
+}
 
 export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot {
   const scale = opts.scale ?? TIME_SCALE;
@@ -217,6 +241,68 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
     };
   });
 
+  for (const reg of opts.registeredBuses ?? []) {
+    const route = ROUTES.find((r) => r.id === reg.routeId);
+    if (!route) continue;
+    // A stable per-bus phase so newly registered buses are spread along the
+    // route instead of all stacked at the first stop.
+    const phase = hash(reg.id);
+    const run = busRun(route, phase, simSec);
+    const coord = pointAt(route, run.progress);
+    const idx = Math.round(run.progress * (route.path.length - 1));
+    const jitter = noise(hash(reg.id) * 1000 + Math.floor(simSec / 15));
+    const offline = isOffline(reg);
+
+    const delaySec = Math.round(noise(hash(reg.id) * 100 + 7) * 210) - 50;
+    const nextStop =
+      run.direction === "morning"
+        ? (route.stops.find((s) => s.offsetSec > run.elapsedSec) ?? route.stops[route.stops.length - 1])
+        : ([...route.stops].reverse().find((s) => s.offsetSec < run.elapsedSec) ?? route.stops[0]);
+
+    buses.push({
+      id: reg.id,
+      plate: reg.plate,
+      name: `${reg.plate} · ${reg.model}`,
+      routeId: reg.routeId,
+      driverId: reg.driverId ?? `unassigned-${reg.id}`,
+      attendantId: "",
+      capacity: reg.capacity,
+      onBoard: Math.round(reg.capacity * 0.55 * Math.min(1, run.progress * 1.2)),
+      status: offline
+        ? "offline"
+        : reg.status === "maintenance"
+          ? "breakdown"
+          : delaySec > 200
+            ? "delayed"
+            : run.parked === "at_school"
+              ? "finished"
+              : "on_time",
+      delaySec,
+      speedKph: offline || run.parked !== "none" ? 0 : Math.round(16 + jitter * 24),
+      heading: bearing(route.path[Math.max(0, idx - 2)], route.path[Math.min(route.path.length - 1, idx + 2)]),
+      position: coord,
+      coord,
+      lastPingSec: offline ? 0 : 1 + Math.round(jitter * 5),
+      fuelPct: Math.round(40 + hash(reg.id + "f") * 55),
+      odometerKm: Math.round(1200 + hash(reg.id + "o") * 9000),
+      nextStopId: nextStop.id,
+      progress: offline ? 0 : run.progress,
+      direction: run.direction,
+      parkState: offline ? "stopped" : run.parked,
+      etaSec: Math.max(0, run.direction === "morning" ? route.durationSec - run.elapsedSec : run.elapsedSec),
+      tripIndex: run.tripIndex,
+      registered: true,
+      model: reg.model,
+      trackerId: reg.trackerId,
+      attendantOnDuty: reg.attendantName,
+      offlineReason: offline
+        ? "No GPS tracker paired yet — add a tracker ID to start streaming"
+        : reg.status === "maintenance"
+          ? "In maintenance — reporting to the workshop"
+          : undefined,
+    });
+  }
+
   const students = STUDENTS.map((s) => {
     const bus = buses.find((b) => b.id === s.busId)!;
     const route = ROUTES.find((r) => r.id === s.routeId)!;
@@ -235,7 +321,20 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
   const events = buildEvents(buses, students, simSec);
   const alerts = buildAlerts(buses, simSec, events);
 
-  const activeBuses = buses.filter((b) => b.status !== "finished");
+  const rosterDrivers: Driver[] = [
+    ...DRIVERS,
+    ...(opts.registeredDrivers ?? []).map((d) => ({
+      id: d.id,
+      name: d.name,
+      phone: d.phone,
+      licence: d.licence,
+      rating: 4.5,
+      yearsExp: d.yearsExp,
+      avatarHue: Math.round(hash(d.id) * 360),
+    })),
+  ];
+
+  const activeBuses = buses.filter((b) => b.status !== "finished" && b.status !== "offline");
   const onTime = activeBuses.filter((b) => b.delaySec <= 180).length;
   const totalStudents = students.length;
   const onBoard = students.filter((s) => s.boardStatus === "onboard").length;
@@ -248,7 +347,7 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
     school: SCHOOL,
     routes: ROUTES,
     buses,
-    drivers: DRIVERS,
+    drivers: rosterDrivers,
     attendants: ATTENDANTS,
     students,
     guardians: GUARDIANS,

@@ -164,6 +164,7 @@ export default function FleetMap({
               const selected = selectedBusId === bus.id;
               const dim = focusRouteId && focusRouteId !== bus.routeId;
               const critical = bus.status === "breakdown";
+              const offline = bus.status === "offline";
               return (
                 <button
                   key={bus.id}
@@ -181,11 +182,20 @@ export default function FleetMap({
                   {critical && (
                     <span className="absolute inset-0 -m-2 animate-ping rounded-full bg-berry-500/40" />
                   )}
+                  {bus.registered && !offline && (
+                    <span
+                      className="absolute inset-0 -m-1 rounded-full border"
+                      style={{ borderColor: route.color, opacity: 0.45 }}
+                    />
+                  )}
                   <span
                     className={`relative grid size-8 place-items-center rounded-full border-2 border-canvas text-canvas shadow-lg transition-transform duration-200 group-hover:scale-110 ${
                       selected ? "ring-2 ring-ink-900/20 scale-110" : ""
                     }`}
-                    style={{ background: critical ? "#ec4d68" : route.color }}
+                    style={{
+                      background: critical ? "#ec4d68" : offline ? "#3a3c40" : route.color,
+                      borderStyle: offline ? "dashed" : "solid",
+                    }}
                   >
                     <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M5 16V8a2 2 0 0 1 2-2h8l2 3v7" strokeLinecap="round" />
@@ -198,8 +208,10 @@ export default function FleetMap({
                   {(hover === bus.id || selected) && (
                     <div className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2.5 w-max -translate-x-1/2 rounded-lg border border-line bg-paper-3 px-2.5 py-1.5 text-left shadow-xl">
                       <p className="text-[11px] font-semibold text-ink-900">{route.code} · {bus.plate}</p>
-                      <p className="num text-[10px] text-ink-300">
-                        {bus.speedKph} kph · {bus.onBoard}/{bus.capacity} on board
+                      <p className="num text-[10px] text-ink-500">
+                        {offline
+                          ? "no GPS fix"
+                          : `${bus.speedKph} kph · ${bus.onBoard}/${bus.capacity} on board`}
                       </p>
                     </div>
                   )}

@@ -8,6 +8,7 @@ const STATUS: Record<RunStatus, { label: string; dot: string; bg: string; text: 
   delayed: { label: "Delayed", dot: "bg-sun-500", bg: "bg-sun-100", text: "text-sun-600" },
   breakdown: { label: "Breakdown", dot: "bg-berry-500", bg: "bg-berry-100", text: "text-berry-600" },
   finished: { label: "At school", dot: "bg-sky-500", bg: "bg-sky-100", text: "text-sky-600" },
+  offline: { label: "Off GPS", dot: "bg-ink-400", bg: "bg-ink-100", text: "text-ink-600" },
 };
 
 export function StatusPill({ status, size = "md" }: { status: RunStatus; size?: "sm" | "md" }) {

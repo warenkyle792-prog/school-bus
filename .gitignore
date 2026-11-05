@@ -9,3 +9,6 @@ dist/
 next-env.d.ts
 .DS_Store
 .vercel
+
+# runtime fleet registry (demo persistence; use a database in production)
+.data/

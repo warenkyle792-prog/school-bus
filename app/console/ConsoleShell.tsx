@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import AppBar from "@/components/AppBar";
 import FleetMap from "@/components/FleetMap";
 import BusDetail from "@/components/BusDetail";
+import FleetManager from "@/components/FleetManager";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
 import { ThemeBoot } from "@/components/ThemePicker";
 import { Avatar, LiveBadge, OccupancyBar, Ring, RouteChip, StatusPill } from "@/components/ui";
@@ -15,7 +16,7 @@ export default function ConsoleShell() {
   const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
   const [focusRouteId, setFocusRouteId] = useState<string | null>(null);
   const [detailBusId, setDetailBusId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"fleet" | "alerts" | "log">("fleet");
+  const [tab, setTab] = useState<"fleet" | "register" | "alerts" | "log">("register");
 
   if (!snapshot) {
     return (
@@ -156,7 +157,7 @@ export default function ConsoleShell() {
         {/* ── Activity / alerts ───────────────────────────────────── */}
         <aside className="flex min-h-[360px] flex-col border-t border-line lg:min-h-0 lg:border-t-0 lg:border-l">
           <div className="flex shrink-0 gap-1 border-b border-line p-2">
-            {(["fleet", "alerts", "log"] as const).map((t) => (
+            {(["fleet", "register", "alerts", "log"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -165,7 +166,13 @@ export default function ConsoleShell() {
                   tab === t ? "bg-ink-100 text-ink-900" : "text-ink-500 hover:text-ink-800"
                 )}
               >
-                {t === "fleet" ? "Readiness" : t === "alerts" ? "Alerts" : "Activity"}
+                {t === "fleet"
+                  ? "Readiness"
+                  : t === "register"
+                    ? "Buses"
+                    : t === "alerts"
+                      ? "Alerts"
+                      : "Activity"}
                 {t === "alerts" && snapshot.kpis.openAlerts > 0 && (
                   <span className="ml-1.5 rounded-full bg-berry-500 px-1.5 text-[10px] font-bold text-canvas">
                     {snapshot.kpis.openAlerts}
@@ -177,6 +184,16 @@ export default function ConsoleShell() {
 
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {tab === "fleet" && <Readiness snapshot={snapshot} />}
+            {tab === "register" && (
+              <FleetManager
+                snapshot={snapshot}
+                onShowOnMap={(busId) => {
+                  setSelectedBusId(busId);
+                  const bus = snapshot.buses.find((b) => b.id === busId);
+                  if (bus) setFocusRouteId(bus.routeId);
+                }}
+              />
+            )}
             {tab === "alerts" && <Alerts snapshot={snapshot} onOpenBus={setDetailBusId} />}
             {tab === "log" && <ActivityLog snapshot={snapshot} />}
           </div>
@@ -266,7 +283,7 @@ function BusRow({
   onOpen: () => void;
 }) {
   const route = snapshot.routes.find((r) => r.id === bus.routeId)!;
-  const driver = snapshot.drivers.find((d) => d.id === bus.driverId)!;
+  const driver = snapshot.drivers.find((d) => d.id === bus.driverId);
   const nextStop = route.stops.find((s) => s.id === bus.nextStopId);
 
   return (
@@ -289,10 +306,19 @@ function BusRow({
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center justify-between gap-2">
-            <span className="truncate text-[13px] font-semibold">{route.code}</span>
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-[13px] font-semibold">{route.code}</span>
+              {bus.registered && (
+                <span className="shrink-0 rounded-full bg-brand-100 px-1 text-[8.5px] font-bold tracking-wide text-brand-600 uppercase">
+                  new
+                </span>
+              )}
+            </span>
             <StatusPill status={bus.status} size="sm" />
           </span>
-          <span className="mt-0.5 block truncate text-[11.5px] text-ink-500">{driver.name}</span>
+          <span className="mt-0.5 block truncate text-[11.5px] text-ink-500">
+            {driver?.name ?? <span className="text-sun-600">No driver assigned</span>}
+          </span>
         </span>
       </button>
 
@@ -310,7 +336,11 @@ function BusRow({
 
       <div className="mt-1.5 flex items-center justify-between pl-[42px]">
         <span className="truncate text-[10.5px] text-ink-400">
-          {bus.status === "breakdown" ? "Stopped · recovery en route" : `Next · ${nextStop?.name ?? "—"}`}
+          {bus.status === "breakdown"
+            ? "Stopped · recovery en route"
+            : bus.status === "offline"
+              ? (bus.offlineReason ?? "No GPS fix")
+              : `Next · ${nextStop?.name ?? "—"}`}
         </span>
         <span className="flex items-center gap-1">
           <span className="num text-[10.5px] font-medium text-ink-500">
@@ -343,8 +373,9 @@ function SelectedBusCard({
   onOpen: () => void;
 }) {
   const route = snapshot.routes.find((r) => r.id === bus.routeId)!;
-  const driver = snapshot.drivers.find((d) => d.id === bus.driverId)!;
-  const attendant = snapshot.attendants.find((a) => a.id === bus.attendantId)!;
+  const driver = snapshot.drivers.find((d) => d.id === bus.driverId);
+  const attendant = snapshot.attendants.find((a) => a.id === bus.attendantId);
+  const attendantName = attendant?.name ?? bus.attendantOnDuty ?? "—";
   const idx = route.stops.findIndex((s) => s.id === bus.nextStopId);
 
   return (
@@ -383,8 +414,8 @@ function SelectedBusCard({
 
       <div className="mt-2.5 space-y-1.5">
         <Row label="Next stop" value={route.stops[idx]?.name ?? "—"} />
-        <Row label="Driver" value={driver.name} extra={driver.phone} />
-        <Row label="Attendant" value={attendant.name} />
+        <Row label="Driver" value={driver?.name ?? "Unassigned"} extra={driver?.phone} />
+        <Row label="Attendant" value={attendantName} />
         <Row label="Last ping" value={`${bus.lastPingSec}s ago`} />
       </div>
 
@@ -502,7 +533,9 @@ function ActivityLog({ snapshot }: { snapshot: Snapshot }) {
 }
 
 function Readiness({ snapshot }: { snapshot: Snapshot }) {
-  const fuel = snapshot.buses.reduce((a, b) => a + b.fuelPct, 0) / snapshot.buses.length;
+  const fuel = snapshot.buses.length
+    ? snapshot.buses.reduce((a, b) => a + b.fuelPct, 0) / snapshot.buses.length
+    : 0;
   return (
     <div className="space-y-2.5">
       <div className="card p-3">
@@ -513,7 +546,15 @@ function Readiness({ snapshot }: { snapshot: Snapshot }) {
             return (
               <div key={b.id}>
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-semibold text-ink-800">{route.code}</span>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="font-semibold text-ink-800">{route.code}</span>
+                    <span className="num truncate text-[10px] text-ink-500">{b.plate}</span>
+                    {b.registered && (
+                      <span className="rounded-full bg-brand-100 px-1 text-[8.5px] font-bold tracking-wide text-brand-600 uppercase">
+                        new
+                      </span>
+                    )}
+                  </span>
                   <span className="num text-ink-500">{b.fuelPct}% fuel</span>
                 </div>
                 <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-ink-100">
@@ -541,8 +582,8 @@ function Readiness({ snapshot }: { snapshot: Snapshot }) {
                 <Avatar name={d.name} hue={d.avatarHue} size={26} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[11.5px] font-semibold text-ink-800">{d.name}</p>
-                  <p className="truncate text-[10px] text-ink-400">
-                    {d.yearsExp} yrs · ⭐ {d.rating.toFixed(1)} {att ? `· ${att.name.split(" ")[0]}` : ""}
+                  <p className="truncate text-[10px] text-ink-500">
+                    {d.yearsExp} yrs · {att ? att.name.split(" ")[0] : "available"}
                   </p>
                 </div>
                 <span className="size-1.5 shrink-0 rounded-full bg-brand-500" />

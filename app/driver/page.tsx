@@ -40,7 +40,8 @@ export default function DriverPage() {
     );
   }
 
-  const attendant = snapshot.attendants.find((a) => a.id === bus.attendantId)!;
+  const attendant = snapshot.attendants.find((a) => a.id === bus.attendantId);
+  const attendantName = attendant?.name ?? bus.attendantOnDuty ?? "No attendant assigned";
   const manifest = snapshot.students.filter((s) => s.busId === bus.id);
   const matchedStop = route.stops.find((s) => s.id === bus.nextStopId) ?? route.stops[0];
   const stopIdx = route.stops.findIndex((s) => s.id === matchedStop.id);
@@ -180,10 +181,10 @@ export default function DriverPage() {
             </div>
 
             <div className="card flex items-center gap-3 p-3.5">
-              <Avatar name={attendant.name} hue={attendant.avatarHue} size={34} />
+              <Avatar name={attendantName} hue={attendant?.avatarHue ?? 200} size={34} />
               <div className="min-w-0 flex-1">
-                <p className="text-[12px] font-semibold">{attendant.name} · attendant</p>
-                <p className="num text-[10.5px] text-ink-400">{attendant.phone}</p>
+                <p className="text-[12px] font-semibold">{attendantName}{attendant ? " · attendant" : ""}</p>
+                <p className="num text-[10.5px] text-ink-500">{attendant?.phone ?? "—"}</p>
               </div>
               <span className="size-1.5 rounded-full bg-brand-500" />
             </div>
