@@ -212,7 +212,7 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
       progress,
       direction: run.direction,
       parkState: isBroken ? "stopped" : run.parked,
-      etaSec: isBroken ? remainingSec + 600 : remainingSec,
+      etaSec: isBroken ? remainingSec + 600 : Math.max(0, remainingSec + (isBroken ? 0 : delaySec)),
       tripIndex: run.tripIndex,
     };
   });

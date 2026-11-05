@@ -102,7 +102,7 @@ export default function BusDetail({
             <div>
               <div className="h-[150px] border-b border-line">
                 <MapCanvas
-                  view={{ center: bus.position, zoom: 3.4 }}
+                  view={{ center: route.path[Math.floor(route.path.length / 2)], zoom: 1.28 }}
                   labels={false}
                   className="h-full w-full"
                 >

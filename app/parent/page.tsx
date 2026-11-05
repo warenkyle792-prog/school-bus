@@ -6,10 +6,12 @@ import MapCanvas from "@/components/MapCanvas";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
 import { Avatar, LiveBadge, StatusPill } from "@/components/ui";
 import { cx, fmtDuration } from "@/lib/format";
-import type { Snapshot } from "@/lib/types";
 
-/** The demo signs in as a guardian with two children on different routes. */
-const DEMO_CHILD_IDS = ["st-001", "st-046"];
+/**
+ * The demo signs in as a guardian with two children on different routes.
+ * Both are mid-route stops so the live ETA always has something to say.
+ */
+const DEMO_CHILD_IDS = ["st-013", "st-076"];
 
 export default function ParentPage() {
   const { snapshot, error } = useLiveSnapshot(1500);
@@ -30,7 +32,7 @@ export default function ParentPage() {
 
   if (!snapshot) {
     return (
-      <Shell>
+      <Shell schoolName="Riverside Academy">
         <div className="grid flex-1 place-items-center p-8 text-center">
           <div>
             <div className="mx-auto size-9 animate-pulse rounded-full bg-brand-200" />
@@ -51,16 +53,18 @@ export default function ParentPage() {
   const stop = route.stops.find((s) => s.id === child.stopId)!;
   const nextStop = route.stops.find((s) => s.id === bus.nextStopId) ?? stop;
 
-  // live countdown to the child's stop
-  const progressToStop = Math.max(0, stop.offsetSec - (route.durationSec - bus.etaSec));
-  const etaSec = bus.direction === "morning" ? progressToStop + bus.delaySec : bus.etaSec;
-  const etaMin = Math.max(0, Math.round(etaSec / 60));
+  // Live countdown to this child's own stop, not just to the school.
+  const elapsedSec = bus.direction === "morning" ? route.durationSec - bus.etaSec : bus.etaSec;
+  const stopIsAhead = bus.direction === "morning" ? elapsedSec < stop.offsetSec : elapsedSec > stop.offsetSec;
+  const etaMin = stopIsAhead
+    ? Math.max(1, Math.round(Math.max(0, Math.abs(stop.offsetSec - elapsedSec) + bus.delaySec) / 60))
+    : 0;
 
   const childEvents = snapshot.events.filter((e) => e.busId === bus.id).slice(0, 5);
   const routeAlerts = snapshot.alerts.filter((a) => a.busId === bus.id).slice(0, 6);
 
   return (
-    <Shell clock={snapshot.clockLabel}>
+    <Shell clock={snapshot.clockLabel} schoolName={snapshot.school.shortName}>
       {/* child switcher */}
       <div className="flex gap-2 px-5 pt-4">
         {children.map((c) => {
@@ -140,11 +144,17 @@ export default function ParentPage() {
                 <div className="mt-3 flex items-end justify-between rounded-xl bg-brand-100/70 px-3 py-2.5">
                   <div>
                     <p className="text-[10px] font-bold tracking-wide text-brand-800/70 uppercase">
-                      {bus.direction === "morning" ? "Arrives at your stop" : "Bus reaches you"}
+                      {!stopIsAhead
+                        ? child.boardStatus === "onboard"
+                          ? "Your child is on the bus"
+                          : "Picked up"
+                        : bus.direction === "morning"
+                          ? "Arrives at your stop"
+                          : "Reaches your stop"}
                     </p>
                     <p className="num text-[26px] leading-tight font-semibold text-brand-900">
-                      {etaMin}
-                      <span className="ml-1 text-[13px] font-medium">min</span>
+                      {stopIsAhead ? etaMin : "--"}
+                      <span className="ml-1 text-[13px] font-medium">{stopIsAhead ? "min" : ""}</span>
                     </p>
                   </div>
                   <div className="text-right">
@@ -305,14 +315,22 @@ export default function ParentPage() {
   );
 }
 
-function Shell({ children, clock }: { children: React.ReactNode; clock?: string }) {
+function Shell({
+  children,
+  clock,
+  schoolName,
+}: {
+  children: React.ReactNode;
+  clock?: string;
+  schoolName: string;
+}) {
   return (
     <div className="flex min-h-dvh justify-center bg-ink-800/95 p-0 sm:p-8">
       <div className="relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-paper sm:h-[860px] sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem] sm:border sm:border-ink-700/40 sm:shadow-2xl">
         <header className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
           <div>
             <p className="text-[10px] font-semibold tracking-wider text-ink-400 uppercase">Safiri</p>
-            <p className="text-[13px] leading-tight font-semibold">{snapshotSchoolName()}</p>
+            <p className="text-[13px] leading-tight font-semibold">{schoolName}</p>
           </div>
           <div className="flex items-center gap-2">
             {clock && <span className="num rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-600">{clock}</span>}
@@ -328,10 +346,6 @@ function Shell({ children, clock }: { children: React.ReactNode; clock?: string 
       </div>
     </div>
   );
-}
-
-function snapshotSchoolName() {
-  return "Riverside Academy";
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {

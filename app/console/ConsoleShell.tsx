@@ -36,9 +36,9 @@ export default function ConsoleShell() {
         }
       />
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_330px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[300px_minmax(0,1fr)_330px] lg:overflow-hidden">
         {/* ── Fleet rail ───────────────────────────────────────────── */}
-        <aside className="flex min-h-0 flex-col border-line lg:border-r">
+        <aside className="flex min-h-0 max-h-[42vh] flex-col border-b border-line lg:max-h-none lg:border-r lg:border-b-0">
           <div className="shrink-0 px-4 pt-4 pb-3">
             <div className="flex items-end justify-between">
               <div>
@@ -91,7 +91,7 @@ export default function ConsoleShell() {
         </aside>
 
         {/* ── Map ──────────────────────────────────────────────────── */}
-        <main className="relative flex min-h-0 flex-col p-3 lg:p-4">
+        <main className="relative flex min-h-[440px] flex-col p-3 lg:min-h-0 lg:p-4">
           <KpiStrip snapshot={snapshot} />
 
           <div className="relative mt-3 min-h-0 flex-1 overflow-hidden rounded-[1.35rem] border border-line">
@@ -145,7 +145,7 @@ export default function ConsoleShell() {
         </main>
 
         {/* ── Activity / alerts ───────────────────────────────────── */}
-        <aside className="flex min-h-0 flex-col border-line lg:border-l">
+        <aside className="flex min-h-[360px] flex-col border-t border-line lg:min-h-0 lg:border-t-0 lg:border-l">
           <div className="flex shrink-0 gap-1 border-b border-line p-2">
             {(["fleet", "alerts", "log"] as const).map((t) => (
               <button
@@ -206,7 +206,7 @@ function KpiStrip({ snapshot }: { snapshot: Snapshot }) {
     {
       label: "Open alerts",
       value: kpis.openAlerts,
-      suffix: kpis.openAlerts === 1 ? "needs action" : "need action",
+      suffix: kpis.openAlerts === 0 ? "all clear" : kpis.openAlerts === 1 ? "needs action" : "need action",
       ring: kpis.openAlerts === 0 ? 100 : 100 - kpis.openAlerts * 22,
       tone: kpis.openAlerts > 0 ? "berry" : "brand",
     },

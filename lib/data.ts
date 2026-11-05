@@ -247,13 +247,19 @@ const LAST = [
   "Njoroge","Abdalla","Wekesa","Njeri","Maina","Ochieng","Karanja","Hassan","Odhiam","Wafula",
 ];
 
+/** +254 7XX XXX XXX, deterministic. */
+function formatKePhone(seed: number): string {
+  const digits = String(seed).padStart(9, "0").slice(-9);
+  return `+254 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
+}
+
 export const GUARDIANS: Guardian[] = Array.from({ length: 12 }).map((_, i) => {
   const first = FIRST[(i * 5 + 3) % FIRST.length];
   const last = LAST[(i * 7 + 1) % LAST.length];
   return {
     id: `g-${String(i + 1).padStart(2, "0")}`,
     name: `${first} ${last}`,
-    phone: `+254 7${(i % 9) + 1}${String(200000 + i * 3457).slice(0, 6)}`.replace(/(\d{3})(\d{3})/, "$1 $2"),
+    phone: formatKePhone(720000000 + ((i * 7919 + 4021) % 9899999)),
     email: `${first.toLowerCase()}.${last.toLowerCase()}@mail.co.ke`,
     avatarHue: (i * 37 + 20) % 360,
   };
@@ -271,8 +277,8 @@ export const STUDENTS: Student[] = (() => {
     for (const stop of route.stops) {
       const count = Math.max(3, Math.round(stop.students * 0.75));
       for (let i = 0; i < count; i++) {
-        const first = FIRST[(n * 11 + 2) % FIRST.length];
-        const last = LAST[(n * 5 + 4) % LAST.length];
+        const first = FIRST[n % FIRST.length];
+        const last = LAST[(n * 11 + Math.floor(n / FIRST.length) * 3 + 4) % LAST.length];
         out.push({
           id: `st-${String(n + 1).padStart(3, "0")}`,
           name: `${first} ${last}`,
@@ -292,6 +298,15 @@ export const STUDENTS: Student[] = (() => {
   }
   return out;
 })();
+
+/**
+ * Keep the demo household coherent: the two children shown in the parent app
+ * (st-013 and st-076) are siblings, both under guardian g-01.
+ */
+for (const id of ["st-013", "st-076"]) {
+  const student = STUDENTS.find((s) => s.id === id);
+  if (student) student.guardianId = "g-01";
+}
 
 export const BUSES: Pick<
   Bus,

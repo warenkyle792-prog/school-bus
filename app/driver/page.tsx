@@ -45,7 +45,8 @@ export default function DriverPage() {
   const stopIdx = route.stops.findIndex((s) => s.id === matchedStop.id);
   const stopKids = manifest.filter((s) => s.stopId === matchedStop.id);
   const checkedIn = stopKids.filter((k) => boarded[k.id]).length;
-  const totalBoarded = manifest.filter((m) => boarded[m.id]).length + bus.onBoard;
+  // the live manifest is the source of truth; local taps are visual confirmation
+  const totalBoarded = Math.min(bus.capacity, Math.max(bus.onBoard, stopKids.filter((k) => boarded[k.id]).length + bus.onBoard - checkedIn));
 
   const confirmStop = (id: string) =>
     setConfirmed((prev) => (prev.includes(id) ? prev : [...prev, id]));
