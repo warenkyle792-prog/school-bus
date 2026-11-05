@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { etaToStop } from "@/lib/eta";
 import { seedMessages } from "@/lib/messages";
-import { snapshotAt, TIME_SCALE } from "@/lib/sim";
+import { snapshotAt } from "@/lib/sim";
+import { SERVER_START_MS } from "@/lib/serverClock";
 import { listRegistry } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
-const START = Date.now();
+const START = SERVER_START_MS;
 
 /**
  * Pickup reminders.
@@ -127,7 +128,7 @@ export async function GET(request: Request) {
   const registry = await listRegistry();
   const snapshot = snapshotAt(Date.now(), {
     startedAtMs: START,
-    scale: TIME_SCALE,
+    scale: 10,
     registeredBuses: registry.buses,
     registeredDrivers: registry.drivers,
   });

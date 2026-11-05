@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /**
+   * Keep production builds out of `.next` while a dev server is running.
+   * Building into the same directory the dev server serves from silently
+   * corrupts its client chunks — the page then renders but never hydrates.
+   */
+  distDir: process.env.SAFIRI_DIST_DIR ?? ".next",
   // Don't advertise the framework version to the internet.
   poweredByHeader: false,
   compress: true,

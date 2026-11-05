@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createBroadcast, listBroadcasts } from "@/lib/broadcast";
 import { snapshotAt, TIME_SCALE } from "@/lib/sim";
+import { SERVER_START_MS } from "@/lib/serverClock";
 import { listRegistry } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
-const START = Date.now();
+const START = SERVER_START_MS;
 
 export async function GET(request: Request) {
   const routeId = new URL(request.url).searchParams.get("route") ?? undefined;

@@ -12,8 +12,8 @@ import { Avatar, LiveBadge, OccupancyBar, Ring, RouteChip, StatusPill } from "@/
 import { cx, fmtDuration, relTime, signedMin } from "@/lib/format";
 import type { Bus, Snapshot } from "@/lib/types";
 
-export default function ConsoleShell() {
-  const { snapshot, error, stale, lastOkMs, retry } = useLiveSnapshot(1300);
+export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
+  const { snapshot, error, stale, lastOkMs, retry } = useLiveSnapshot(1300, initial);
   const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
   const [focusRouteId, setFocusRouteId] = useState<string | null>(null);
   const [detailBusId, setDetailBusId] = useState<string | null>(null);

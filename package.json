@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "build": "SAFIRI_DIST_DIR=.next-build next build",
+    "start": "SAFIRI_DIST_DIR=.next-build next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",

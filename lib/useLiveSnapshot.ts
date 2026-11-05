@@ -27,11 +27,11 @@ const FAILURES_BEFORE_STALE = 2;
  *  - failures are counted; only after 2 do we call the data stale
  *  - backoff slows polling when the network is down, and recovers on success
  */
-export function useLiveSnapshot(intervalMs = 1200): LiveState {
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+export function useLiveSnapshot(intervalMs = 1200, initial?: Snapshot | null): LiveState {
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(initial ?? null);
   const [error, setError] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
-  const [lastOkMs, setLastOkMs] = useState<number | null>(null);
+  const [lastOkMs, setLastOkMs] = useState<number | null>(initial ? Date.now() : null);
   const [tick, setTick] = useState(0);
   const [nonce, setNonce] = useState(0);
   const failures = useRef(0);

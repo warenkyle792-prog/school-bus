@@ -20,8 +20,13 @@ live, and the console marks buses whose tracker has not reported as **Off GPS**.
 
 ```
 npm install
-npm run dev        # http://localhost:3000
+npm run dev             # development, http://localhost:3000
+npm run build && npm start   # production build, served from .next-build
 ```
+
+> **Build output is isolated on purpose.** `build`/`start` use `.next-build` so running a build
+> can never overwrite the chunks a running `next dev` is serving — doing that makes pages render
+> but never hydrate, which looks exactly like a hung app.
 
 Open `/` for the sign-in screen (transport manager, parent, driver).
 
@@ -190,6 +195,13 @@ lib/
 
 The UI reads one endpoint, `GET /api/snapshot`, roughly every 1.3 s. Bus markers ease toward each
 new position with `requestAnimationFrame`, so the map stays fluid between ticks.
+
+### First paint
+
+All three portals are server-rendered with a live snapshot (`lib/getSnapshot.ts`, shared with
+`GET /api/snapshot`), so the console opens populated instead of starting on a spinner. The client
+hook is seeded with that snapshot and polls on top of it. There is one process-wide clock
+(`lib/serverClock.ts`) so the page and the API never disagree about what time the simulator is at.
 
 ### Connection handling
 
