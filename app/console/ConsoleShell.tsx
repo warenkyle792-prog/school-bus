@@ -5,6 +5,7 @@ import AppBar from "@/components/AppBar";
 import FleetMap from "@/components/FleetMap";
 import BusDetail from "@/components/BusDetail";
 import FleetManager from "@/components/FleetManager";
+import { LoadingState, StaleBanner } from "@/components/LoadState";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
 import { ThemeBoot } from "@/components/ThemePicker";
 import { Avatar, LiveBadge, OccupancyBar, Ring, RouteChip, StatusPill } from "@/components/ui";
@@ -12,7 +13,7 @@ import { cx, fmtDuration, relTime, signedMin } from "@/lib/format";
 import type { Bus, Snapshot } from "@/lib/types";
 
 export default function ConsoleShell() {
-  const { snapshot, error } = useLiveSnapshot(1300);
+  const { snapshot, error, stale, lastOkMs, retry } = useLiveSnapshot(1300);
   const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
   const [focusRouteId, setFocusRouteId] = useState<string | null>(null);
   const [detailBusId, setDetailBusId] = useState<string | null>(null);
@@ -22,7 +23,15 @@ export default function ConsoleShell() {
     return (
       <>
         <ThemeBoot />
-        <ConsoleSkeleton error={error} />
+        <div className="flex h-dvh flex-col bg-paper">
+          <AppBar clock="--:--" />
+          <LoadingState
+            title="Connecting to the live fleet"
+            detail="Fetching positions for every active bus"
+            error={error}
+            onRetry={retry}
+          />
+        </div>
       </>
     );
   }
@@ -102,6 +111,7 @@ export default function ConsoleShell() {
 
         {/* ── Map ──────────────────────────────────────────────────── */}
         <main className="relative flex min-h-[440px] flex-col p-3 lg:min-h-0 lg:p-4">
+          {stale && <StaleBanner lastOkMs={lastOkMs} onRetry={retry} className="mb-2" />}
           <KpiStrip snapshot={snapshot} />
 
           <div className="relative mt-3 min-h-0 flex-1 overflow-hidden rounded-[1.35rem] border border-line">
@@ -595,22 +605,3 @@ function Readiness({ snapshot }: { snapshot: Snapshot }) {
   );
 }
 
-function ConsoleSkeleton({ error }: { error: string | null }) {
-  return (
-    <div className="grid h-dvh place-items-center bg-canvas">
-      <div className="text-center">
-        <div className="mx-auto grid size-11 animate-pulse place-items-center rounded-xl bg-brand-700/10">
-          <svg viewBox="0 0 24 24" className="size-5 text-brand-600" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 17V7a2 2 0 0 1 2-2h9l3 4v8" strokeLinecap="round" />
-            <circle cx="7.5" cy="17.5" r="1.6" />
-            <circle cx="16.5" cy="17.5" r="1.6" />
-          </svg>
-        </div>
-        <p className="mt-3 text-[13px] font-medium text-ink-700">
-          {error ? "Live feed interrupted" : "Connecting to fleet GPS…"}
-        </p>
-        <p className="mt-1 text-[11.5px] text-ink-400">{error ?? "Fetching positions for 5 buses"}</p>
-      </div>
-    </div>
-  );
-}

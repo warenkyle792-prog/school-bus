@@ -8,10 +8,11 @@ import ThemePicker, { ThemeBoot } from "@/components/ThemePicker";
 import { cx, fmtDuration } from "@/lib/format";
 import { etaMinutes, etaToStop } from "@/lib/eta";
 import CommsBox from "@/components/CommsBox";
+import { LoadingState, StaleBanner } from "@/components/LoadState";
 import { DEMO_GUARDIAN_ID } from "@/lib/data";
 
 /**
- * The demo session belongs to household g-01: three children across two routes.
+ * The signed-in session belongs to household g-01: three children across two routes.
  * Everything below is derived from those children — a parent never sees the
  * rest of the fleet, and every ETA is scoped to their own stop.
  */
@@ -30,7 +31,7 @@ type Reminder = {
 const LEAD_OPTIONS = [5, 10, 15];
 
 export default function ParentPage() {
-  const { snapshot, error } = useLiveSnapshot(1500);
+  const { snapshot, error, stale, lastOkMs, retry } = useLiveSnapshot(1500);
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
   const [tab, setTab] = useState<"today" | "chat" | "alerts">("today");
 
@@ -146,15 +147,12 @@ export default function ParentPage() {
   if (!snapshot) {
     return (
       <Shell schoolName="Riverside Academy" guardianName="…">
-        <div className="grid flex-1 place-items-center p-8 text-center">
-          <div>
-            <div className="mx-auto size-9 animate-pulse rounded-full bg-brand-200" />
-            <p className="mt-3 text-[13px] font-medium text-ink-700">
-              {error ? "Can't reach the bus right now" : "Finding your child's bus…"}
-            </p>
-            <p className="mt-1 text-[11.5px] text-ink-500">{error ?? "Connecting to live GPS"}</p>
-          </div>
-        </div>
+        <LoadingState
+          title="Finding your child's bus"
+          detail="Connecting to live GPS"
+          error={error}
+          onRetry={retry}
+        />
       </Shell>
     );
   }
@@ -213,6 +211,7 @@ export default function ParentPage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-4 pb-24">
+        {stale && <StaleBanner lastOkMs={lastOkMs} onRetry={retry} className="mb-2.5" />}
         {tab === "today" && (
           <div className="space-y-3">
             {!bus ? (

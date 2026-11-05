@@ -4,6 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { cx } from "@/lib/format";
 import type { CommMessage } from "@/lib/messages";
 
+type Broadcast = {
+  id: string;
+  routeId: string;
+  title: string;
+  body: string;
+  priority: "emergency" | "delay" | "info";
+  sentBy: string;
+  sentAtMs: number;
+  recipients: number;
+};
+
 /**
  * Two-way emergency channel between a route's driver/attendant and the
  * guardians on that route. Deliberately a *shared thread per route* rather
@@ -28,6 +39,7 @@ export default function CommsBox({
   seed?: CommMessage[];
 }) {
   const [messages, setMessages] = useState<CommMessage[]>(seed ?? []);
+  const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -35,9 +47,47 @@ export default function CommsBox({
     if (seed?.length) setMessages(seed);
   }, [seed]);
 
+  // Messages the school sends from the console are real, persisted records —
+  // pull them so they show up here without a reload.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/broadcasts?route=${encodeURIComponent(routeId)}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { broadcasts: Broadcast[] };
+        if (!cancelled) setBroadcasts(data.broadcasts);
+      } catch {
+        /* offline: keep whatever we already have */
+      }
+    };
+    load();
+    const id = setInterval(load, 4000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [routeId]);
+
   // Newest first in state; the list is rendered oldest-first so the thread
   // reads top-to-bottom like a chat.
-  const thread = messages.filter((m) => m.routeId === routeId).slice(0, 40);
+  const schoolMessages: CommMessage[] = broadcasts.map((b) => ({
+    id: b.id,
+    routeId: b.routeId,
+    from: "school",
+    authorName: b.sentBy,
+    body: b.body,
+    atSec: simSec - Math.round((Date.now() - b.sentAtMs) / 1000),
+    priority: b.priority,
+    seenBy: [],
+  }));
+
+  const thread = [...messages, ...schoolMessages]
+    .filter((m) => m.routeId === routeId)
+    .sort((a, b) => b.atSec - a.atSec)
+    .slice(0, 40);
   const ordered = [...thread].reverse();
   const unread = thread.filter((m) => m.from !== "parent" && !m.seenBy.includes("g-01")).length;
 
@@ -115,9 +165,14 @@ export default function CommsBox({
                   </p>
                 </div>
                 <p className="mt-1 text-[11.5px] leading-snug text-ink-800">{m.body}</p>
+                {m.from === "school" && (
+                  <p className="mt-1 text-[9px] font-medium text-ink-500">
+                    Sent by the school to every guardian on this route
+                  </p>
+                )}
                 <p className="num mt-1 text-[9px] text-ink-500">
                   {!isMine && m.seenBy.includes("g-01") ? "seen · " : ""}
-                  {Math.max(1, Math.round((simSec - m.atSec) / 60))} min ago
+                  {Math.max(1, Math.round(Math.abs(simSec - m.atSec) / 60))} min ago
                 </p>
               </div>
             </div>

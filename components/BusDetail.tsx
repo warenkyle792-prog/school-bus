@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cx as cxAll } from "@/lib/format";
 import MapCanvas from "./MapCanvas";
 import { Avatar, StatusPill } from "./ui";
 import { cx, fmtDuration, relTime } from "@/lib/format";
@@ -287,16 +288,7 @@ export default function BusDetail({
                 </dl>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <ActionButton label="Notify parents" tone="brand" />
-                <ActionButton label="Log incident" tone="neutral" />
-                <ActionButton label="Reassign bus" tone="neutral" />
-                <ActionButton label="Call driver" tone="neutral" />
-              </div>
-              <p className="px-1 text-[10.5px] leading-relaxed text-ink-400">
-                Actions in this demo surface a confirmation only — wire them to your SMS/push provider
-                and they become real notifications to guardians.
-              </p>
+              <NotifyPanel bus={bus} route={route} snapshot={snapshot} />
             </div>
           )}
         </div>
@@ -304,6 +296,143 @@ export default function BusDetail({
     </div>
   );
 }
+
+/**
+ * Sends a real message to every guardian with a child on this bus. Recipients
+ * come from the same filter the parent app uses, so the count shown is the
+ * count that receives it.
+ */
+function NotifyPanel({
+  bus,
+  route,
+  snapshot,
+}: {
+  bus: Bus;
+  route: Snapshot["routes"][number];
+  snapshot: Snapshot;
+}) {
+  const [body, setBody] = useState("");
+  const [priority, setPriority] = useState<"info" | "delay" | "emergency">("info");
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [result, setResult] = useState<string | null>(null);
+
+  const households = new Set(
+    snapshot.students.filter((s) => s.busId === bus.id).map((s) => s.guardianId)
+  ).size;
+
+  const send = async () => {
+    if (body.trim().length < 5) {
+      setState("error");
+      setResult("Write at least a few words so parents know what is happening.");
+      return;
+    }
+    setState("sending");
+    setResult(null);
+    try {
+      const res = await fetch("/api/broadcasts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          routeId: route.id,
+          body: body.trim(),
+          priority,
+          title: priority === "emergency" ? "Emergency notice" : "Route update",
+          sentBy: "Transport desk",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Could not send.");
+      setState("sent");
+      setResult(`Sent to ${data.broadcast.recipients} households on ${route.code}.`);
+      setBody("");
+    } catch (err) {
+      setState("error");
+      setResult(err instanceof Error ? err.message : "Could not send.");
+    }
+  };
+
+  return (
+    <div className="card p-3.5">
+      <div className="flex items-center justify-between">
+        <p className="label">Notify parents</p>
+        <span className="num text-[10px] text-ink-500">{households} households</span>
+      </div>
+
+      <div className="mt-2 flex gap-1.5">
+        {(
+          [
+            ["info", "Update"],
+            ["delay", "Delay"],
+            ["emergency", "Emergency"],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setPriority(key)}
+            className={cxAll(
+              "flex-1 rounded-full px-2 py-1 text-[10.5px] font-bold transition",
+              priority === key
+                ? key === "emergency"
+                  ? "bg-berry-500 text-canvas"
+                  : "bg-brand-600 text-canvas"
+                : "border border-line text-ink-600 hover:border-ink-300"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <textarea
+        value={body}
+        onChange={(e) => {
+          setBody(e.target.value);
+          if (state !== "idle") {
+            setState("idle");
+            setResult(null);
+          }
+        }}
+        rows={3}
+        maxLength={500}
+        placeholder={SAMPLE[priority]}
+        className="mt-2 w-full resize-none rounded-lg border border-line bg-paper px-2.5 py-2 text-[11.5px] leading-relaxed text-ink-900 outline-none placeholder:text-ink-400 focus:border-brand-400"
+      />
+
+      <div className="mt-1.5 flex items-center justify-between">
+        <span className="num text-[9.5px] text-ink-500">{body.length}/500</span>
+        <button
+          onClick={send}
+          disabled={state === "sending"}
+          className="rounded-full bg-brand-600 px-3.5 py-1.5 text-[11px] font-bold text-canvas transition hover:bg-brand-500 disabled:opacity-60"
+        >
+          {state === "sending" ? "Sending…" : "Send to parents"}
+        </button>
+      </div>
+
+      {result && (
+        <p
+          className={cxAll(
+            "mt-2 rounded-md px-2 py-1.5 text-[10.5px] leading-snug",
+            state === "error" ? "bg-berry-100 text-berry-600" : "bg-brand-100 text-brand-600"
+          )}
+        >
+          {state === "sent" ? "✓ " : ""}
+          {result}
+        </p>
+      )}
+      <p className="mt-1.5 text-[9.5px] leading-relaxed text-ink-500">
+        Appears in the parent app immediately for every guardian on {route.code}. SMS delivery plugs in
+        at /api/broadcasts when a provider is configured.
+      </p>
+    </div>
+  );
+}
+
+const SAMPLE: Record<"info" | "delay" | "emergency", string> = {
+  info: "Bus is boarding now and leaving shortly.",
+  delay: "Running about 10 minutes late due to traffic. Please stay near the pickup point.",
+  emergency: "Bus has stopped. All children are safe. Recovery vehicle is on the way.",
+};
 
 function Metric({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
@@ -339,23 +468,3 @@ function CallButton() {
   );
 }
 
-function ActionButton({ label, tone }: { label: string; tone: "brand" | "neutral" }) {
-  const [done, setDone] = useState(false);
-  return (
-    <button
-      onClick={() => {
-        setDone(true);
-        setTimeout(() => setDone(false), 2200);
-      }}
-      className={cx(
-        "rounded-lg px-3 py-2 text-[11.5px] font-semibold transition",
-        tone === "brand"
-          ? "bg-brand-600 text-canvas hover:bg-brand-500"
-          : "border border-line bg-paper-2 text-ink-700 hover:border-ink-300",
-        done && "!bg-brand-100 !text-brand-800"
-      )}
-    >
-      {done ? `✓ ${label}` : label}
-    </button>
-  );
-}

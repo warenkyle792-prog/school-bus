@@ -6,14 +6,15 @@ import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
 import { Avatar } from "@/components/ui";
 import ThemePicker, { ThemeBoot } from "@/components/ThemePicker";
 import CommsBox from "@/components/CommsBox";
+import { LoadingState, StaleBanner } from "@/components/LoadState";
 import { DRIVER_TEMPLATES, type CommMessage } from "@/lib/messages";
 import { cx, fmtDuration } from "@/lib/format";
 
-/** Demo driver: R-01, Samuel Otieno. */
+/** Signed-in driver for this session: R-01. */
 const DEMO_DRIVER_ID = "d-01";
 
 export default function DriverPage() {
-  const { snapshot, error } = useLiveSnapshot(1800);
+  const { snapshot, error, stale, lastOkMs, retry } = useLiveSnapshot(1800);
   const [tab, setTab] = useState<"run" | "manifest" | "messages" | "report">("run");
   const [boarded, setBoarded] = useState<Record<string, boolean>>({});
   const [confirmed, setConfirmed] = useState<string[]>([]);
@@ -30,15 +31,12 @@ export default function DriverPage() {
   if (!snapshot || !bus || !route) {
     return (
       <Shell>
-        <div className="grid flex-1 place-items-center p-8 text-center">
-          <div>
-            <div className="mx-auto size-9 animate-pulse rounded-full bg-brand-200" />
-            <p className="mt-3 text-[13px] font-medium text-ink-700">
-              {error ? "No signal — retrying" : "Loading your run sheet…"}
-            </p>
-            <p className="mt-1 text-[11.5px] text-ink-400">{error ?? "Syncing with the transport desk"}</p>
-          </div>
-        </div>
+        <LoadingState
+          title="Loading your run sheet"
+          detail="Syncing with the transport desk"
+          error={error}
+          onRetry={retry}
+        />
       </Shell>
     );
   }
@@ -90,6 +88,11 @@ export default function DriverPage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-24">
+        {stale && (
+          <div className="px-4 pt-3">
+            <StaleBanner lastOkMs={lastOkMs} onRetry={retry} />
+          </div>
+        )}
         {tab === "run" && (
           <div className="space-y-3 p-4">
             {/* next stop hero */}

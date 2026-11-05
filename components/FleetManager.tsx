@@ -134,8 +134,8 @@ export default function FleetManager({ snapshot, onShowOnMap }: Props) {
         <div className="rounded-xl border border-dashed border-line p-4 text-center">
           <p className="text-[12px] font-semibold text-ink-800">No buses registered yet</p>
           <p className="mt-1 text-[11px] leading-relaxed text-ink-500">
-            The five demo buses are simulated. Register a real vehicle and it joins the live map
-            straight away.
+            Add a vehicle and assign its driver. It appears on the live map as soon as its tracker
+            reports.' 
           </p>
         </div>
       )}

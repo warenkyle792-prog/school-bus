@@ -1,14 +1,29 @@
 # Safiri · School Bus Tracking
 
-Live school bus tracking for schools: one system for the **transport desk**, the **driver** and the **parent**.
+Live school bus tracking: one system for the **transport desk**, the **driver** and the **parent**.
 
-Built as a working demo around a Nairobi school — 5 routes, 5 buses, 138 students — with a
-server-side GPS simulator so the whole product runs end to end without hardware.
+Seeded with a Nairobi school — 5 routes, 5 buses, 138 students — so every screen is populated on
+first run. Bus positions come from a built-in simulator until real GPS trackers are connected;
+everything else (registration, mess**aging, reminders, scoping) runs against real stored data.
+
+## What is real vs. what is simulated
+
+| Real | Simulated / not yet wired |
+| --- | --- |
+| Bus & driver registration, assignment, persistence | GPS positions (`lib/sim.ts`) |
+| School → parent messages (stored, delivered in-app) | Authentication — roles are fixed sessions |
+| Parent scoping to their household | SMS / push delivery |
+| ETA maths, pickup reminder state machine | Student attendance from hardware taps |
+
+The UI never claims otherwise: the sign-in screen states the three things to connect before going
+live, and the console marks buses whose tracker has not reported as **Off GPS**.
 
 ```
 npm install
 npm run dev        # http://localhost:3000
 ```
+
+Open `/` for the sign-in screen (transport manager, parent, driver).
 
 | Route      | Who it's for                  |
 | ---------- | ----------------------------- |
@@ -114,6 +129,16 @@ reach every guardian, and parents need to see that others were told. Drivers get
 tagged `emergency | delay | info`; emergency messages render with a red emergency badge. Guardians
 without a child on the route get a read-only view.
 
+**School → parent broadcast** is a real, persisted action, not a button that flashes a tick. The
+transport desk opens any bus's trip sheet, writes a message, marks it Update / Delay / Emergency and
+sends. Recipients are computed from the same filter the parent app uses, so the "11 households"
+shown is the count that actually receives it, and the message survives a reload.
+
+```
+GET  /api/broadcasts?route=r-03   → { broadcasts: [...] }
+POST /api/broadcasts              → { routeId, body, priority, title }
+```
+
 ## Registering buses and drivers
 
 Open **Console → Buses**. From there a school can:
@@ -165,6 +190,15 @@ lib/
 
 The UI reads one endpoint, `GET /api/snapshot`, roughly every 1.3 s. Bus markers ease toward each
 new position with `requestAnimationFrame`, so the map stays fluid between ticks.
+
+### Connection handling
+
+A console that silently freezes on a weak connection is worse than one that says so. So
+`useLiveSnapshot` has an 8 s request timeout, keeps the last good snapshot through a blip, counts
+consecutive failures, backs off up to 15 s while failing and snaps back on success. After two
+failures the UI shows a **stale banner** with the age of the data and a retry, rather than pretending
+the numbers are live. Before the first successful load, `LoadingState` explains what it is waiting
+for and offers a retry after 8 s instead of spinning forever.
 
 Simulated time runs at **10×** wall clock (`TIME_SCALE` in `lib/sim.ts`) — a full school run takes a
 couple of minutes to watch. Change it there for demos, or set it to `1` to reason about real timings.
