@@ -1,0 +1,169 @@
+@import "tailwindcss";
+@import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource-variable/jetbrains-mono";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  /* Ink — warm neutral, slightly green-shifted */
+  --color-ink-900: #10201b;
+  --color-ink-800: #172e26;
+  --color-ink-700: #22453a;
+  --color-ink-600: #3c5f52;
+  --color-ink-500: #5d7d70;
+  --color-ink-400: #8aa79b;
+  --color-ink-300: #b6c9c1;
+  --color-ink-200: #d7e3dd;
+  --color-ink-100: #eaf1ee;
+  --color-ink-50: #f4f8f6;
+
+  --color-paper: #f7f5ef;
+  --color-paper-2: #fffefa;
+  --color-line: #e3e0d6;
+
+  --color-brand-900: #06342a;
+  --color-brand-800: #0a4a3b;
+  --color-brand-700: #0c5c48;
+  --color-brand-600: #0e7c5a;
+  --color-brand-500: #159b6f;
+  --color-brand-400: #4cbb90;
+  --color-brand-300: #93d7bb;
+  --color-brand-200: #c4e9d8;
+  --color-brand-100: #e2f4ec;
+
+  --color-sun-600: #b8640d;
+  --color-sun-500: #e08210;
+  --color-sun-400: #f2a03c;
+  --color-sun-100: #fdefd8;
+
+  --color-berry-600: #a32340;
+  --color-berry-500: #cf2f52;
+  --color-berry-100: #fbe4e8;
+
+  --color-sky-600: #175fa8;
+  --color-sky-500: #1d6fd6;
+  --color-sky-100: #e4eefb;
+
+  --radius-xl2: 1.35rem;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: var(--color-brand-200);
+    color: var(--color-brand-900);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-200) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-ink-200);
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  .card {
+    background: var(--color-paper-2);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl2);
+    box-shadow:
+      0 1px 2px rgba(16, 32, 27, 0.04),
+      0 8px 24px -18px rgba(16, 32, 27, 0.25);
+  }
+  .card-flush {
+    background: var(--color-paper-2);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl2);
+    overflow: hidden;
+  }
+  .hairline {
+    border-color: var(--color-line);
+  }
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--color-ink-500);
+  }
+  .grain {
+    background-image: radial-gradient(rgba(16, 32, 27, 0.045) 1px, transparent 1px);
+    background-size: 4px 4px;
+  }
+  .mask-fade-b {
+    mask-image: linear-gradient(to bottom, black 82%, transparent 100%);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .live-dot::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: currentColor;
+    animation: ping-soft 1.9s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+}
+
+@keyframes ping-soft {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes bus-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(14, 124, 90, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(14, 124, 90, 0);
+  }
+}
