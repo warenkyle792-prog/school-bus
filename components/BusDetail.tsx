@@ -3,7 +3,7 @@
 import { useState } from "react";
 import MapCanvas from "./MapCanvas";
 import { Avatar, StatusPill } from "./ui";
-import { cx, fmtDuration, initials, relTime } from "@/lib/format";
+import { cx, fmtDuration, relTime } from "@/lib/format";
 import type { Bus, Snapshot } from "@/lib/types";
 
 export default function BusDetail({

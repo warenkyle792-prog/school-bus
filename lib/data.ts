@@ -253,7 +253,31 @@ function formatKePhone(seed: number): string {
   return `+254 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
 }
 
-export const GUARDIANS: Guardian[] = Array.from({ length: 12 }).map((_, i) => {
+/**
+ * Households, not one-guardian-per-child.
+ *
+ * A guardian looks after 1–3 children, and siblings share a stop — which is
+ * what makes the parent app's scoping meaningful: a parent sees only the
+ * buses their own household rides, not the whole fleet.
+ */
+const HOUSEHOLD_SIZE = 3;
+
+/**
+ * The demo household (g-01) is deliberately spread over two routes, so the
+ * parent app demonstrates both "one bus per child" switching and strict
+ * scoping — a guardian sees 2 of the 5 buses, never the whole fleet.
+ */
+const DEMO_HOUSEHOLD_INDEXES = new Set([12, 20, 75]); // st-013, st-021, st-076
+const DEMO_HOUSEHOLD_ID = "g-01";
+
+function guardianForIndex(n: number): string {
+  if (DEMO_HOUSEHOLD_INDEXES.has(n)) return DEMO_HOUSEHOLD_ID;
+  // everyone else is spread over the remaining households, never g-01
+  const others = GUARDIANS.length - 1;
+  return GUARDIANS[1 + (Math.floor(n / HOUSEHOLD_SIZE) % others)].id;
+}
+
+export const GUARDIANS: Guardian[] = Array.from({ length: 50 }).map((_, i) => {
   const first = FIRST[(i * 5 + 3) % FIRST.length];
   const last = LAST[(i * 7 + 1) % LAST.length];
   return {
@@ -284,7 +308,7 @@ export const STUDENTS: Student[] = (() => {
           name: `${first} ${last}`,
           grade: gradeForAge(n),
           class: `${gradeForAge(n).replace("Grade ", "")}${["A", "B", "C"][n % 3]}`,
-          guardianId: GUARDIANS[n % GUARDIANS.length].id,
+          guardianId: guardianForIndex(n),
           stopId: stop.id,
           routeId: route.id,
           busId: `b-${route.code.replace("R-", "")}`,
@@ -300,13 +324,13 @@ export const STUDENTS: Student[] = (() => {
 })();
 
 /**
- * Keep the demo household coherent: the two children shown in the parent app
- * (st-013 and st-076) are siblings, both under guardian g-01.
+ * The demo household: g-01 has three children, all on the same bus, spread
+ * across two stops — the realistic case for a parent app.
  */
-for (const id of ["st-013", "st-076"]) {
-  const student = STUDENTS.find((s) => s.id === id);
-  if (student) student.guardianId = "g-01";
-}
+export const DEMO_GUARDIAN_ID = DEMO_HOUSEHOLD_ID;
+export const DEMO_CHILD_IDS = STUDENTS.filter((s) => s.guardianId === DEMO_GUARDIAN_ID).map(
+  (s) => s.id
+);
 
 export const BUSES: Pick<
   Bus,

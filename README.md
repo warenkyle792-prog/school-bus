@@ -23,11 +23,15 @@ on-time %, open alerts, attendance), alert triage with acknowledge, and an activ
 for a live trip sheet: stop timeline with per-stop roster, full manifest, crew contact, fuel and
 vehicle data.
 
-**Parent app** — live position of the child's bus, countdown to *their* stop, boarding/drop-off
-status, trip log, notification preferences, and a direct line to the transport desk.
+**Parent app** — scoped to one household: a guardian sees **only the buses their own children
+ride**, never the fleet. Per child it shows the live position, a countdown to *their* pickup stop,
+boarding status and trip log. Parents can set a **5 / 10 / 15-minute pickup reminder** that fires as
+a notification when the bus is that close, and there is a **two-way emergency channel** per route so
+the driver can reach every guardian at once.
 
 **Driver app** — next stop with expected student count, tap-to-board roster that updates the school
-dashboard, full manifest grouped by stop, incident reporting and a panic button.
+dashboard, full manifest grouped by stop, a **Parents** tab with one-tap broadcast templates
+(delayed, traffic, almost there, breakdown), incident reporting and a panic button.
 
 **Fleet registration** — the console's **Buses** tab registers real vehicles and drivers and assigns
 them to routes. Registered buses join the same live GPS map as the simulated fleet, labelled `new`.
@@ -79,6 +83,36 @@ navigation.
 To change the default look, edit the `@theme` block in `app/globals.css`. To add a preset, add it to
 `PALETTES` in `components/ThemePicker.tsx` — and mirror the token math in the boot script inside
 `app/layout.tsx`.
+
+## Parent scoping, ETAs, reminders and comms
+
+**Scoping.** Guardians are modelled as *households*: each guardian owns 1–3 children, and the parent
+app derives everything from `students.filter(s => s.guardianId === me)`. The demo household (g-01)
+spans two routes on purpose, so the "your buses" list shows 2 of 5 vehicles — never the fleet. On the
+server this must be enforced with row-level security, not by the UI filter.
+
+**ETAs** live in `lib/eta.ts` and are shared by the app and the notification endpoint, so the
+reminder can never disagree with the screen. `etaToStop(bus, route, stop)` returns time-to-*that*
+stop (not to the school), the straight-line distance, and whether the bus has already passed. Delay
+is additive but clamped so a bus running early never produces a negative ETA.
+
+**Reminders.** The guardian picks a lead time (5/10/15 min). The app computes `etaSec - leadMin*60`
+and moves through `scheduled → due → fired`, with `passed` and `offline` as terminal states. The
+reminder is recalculated from the live snapshot on every poll, so it self-corrects when traffic
+changes rather than needing to be re-set.
+
+```
+GET /api/notifications?children=st-013,st-021&lead=10
+→ { reminders: [{ state, etaSec, firesInSec, message }], messages: [...] }
+```
+
+In production the `due` transition should be computed server-side per guardian and pushed (FCM/APNs
+or SMS) by a cron or a snapshot-triggered job — the shape above is already what a worker would send.
+
+**Comms.** One thread per route rather than private DMs: when a bus breaks down, one message has to
+reach every guardian, and parents need to see that others were told. Drivers get one-tap templates
+tagged `emergency | delay | info`; emergency messages render with a red emergency badge. Guardians
+without a child on the route get a read-only view.
 
 ## Registering buses and drivers
 

@@ -5,18 +5,21 @@ import Link from "next/link";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
 import { Avatar } from "@/components/ui";
 import ThemePicker, { ThemeBoot } from "@/components/ThemePicker";
+import CommsBox from "@/components/CommsBox";
+import { DRIVER_TEMPLATES, type CommMessage } from "@/lib/messages";
 import { cx, fmtDuration } from "@/lib/format";
-import type { Snapshot } from "@/lib/types";
 
 /** Demo driver: R-01, Samuel Otieno. */
 const DEMO_DRIVER_ID = "d-01";
 
 export default function DriverPage() {
   const { snapshot, error } = useLiveSnapshot(1800);
-  const [tab, setTab] = useState<"run" | "manifest" | "report">("run");
+  const [tab, setTab] = useState<"run" | "manifest" | "messages" | "report">("run");
   const [boarded, setBoarded] = useState<Record<string, boolean>>({});
   const [confirmed, setConfirmed] = useState<string[]>([]);
   const [sos, setSos] = useState(false);
+  const [sent, setSent] = useState<CommMessage[]>([]);
+  const [broadcast, setBroadcast] = useState<string | null>(null);
 
   const bus = snapshot?.buses.find((b) => b.driverId === DEMO_DRIVER_ID) ?? null;
   const route = useMemo(
@@ -40,6 +43,7 @@ export default function DriverPage() {
     );
   }
 
+  const driver = snapshot.drivers.find((d) => d.id === bus.driverId);
   const attendant = snapshot.attendants.find((a) => a.id === bus.attendantId);
   const attendantName = attendant?.name ?? bus.attendantOnDuty ?? "No attendant assigned";
   const manifest = snapshot.students.filter((s) => s.busId === bus.id);
@@ -237,6 +241,69 @@ export default function DriverPage() {
           </div>
         )}
 
+        {tab === "messages" && (
+          <div className="space-y-3 p-4">
+            <div>
+              <p className="label">Quick messages to parents</p>
+              <p className="mt-1 text-[10.5px] leading-relaxed text-ink-600">
+                One tap sends to every guardian on this route, with your live position attached.
+              </p>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {DRIVER_TEMPLATES.map((t) => (
+                  <button
+                    key={t.label}
+                    onClick={() => {
+                      setSent((prev) => [
+                        {
+                          id: `msg-driver-${Date.now()}`,
+                          routeId: route.id,
+                          from: "driver",
+                          authorName: driver?.name ?? "Driver",
+                          body: t.body,
+                          atSec: snapshot.simSec,
+                          priority: t.priority,
+                          seenBy: [],
+                        },
+                        ...prev,
+                      ]);
+                      setBroadcast(t.label);
+                      setTimeout(() => setBroadcast(null), 4000);
+                    }}
+                    className={cx(
+                      "rounded-xl border px-2.5 py-2 text-left text-[11px] font-semibold transition",
+                      t.priority === "emergency"
+                        ? "border-berry-500/40 bg-berry-100 text-berry-600 hover:bg-berry-100/80"
+                        : "border-line bg-paper-2 text-ink-800 hover:border-ink-300"
+                    )}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              {broadcast && (
+                <p className="mt-2 rounded-lg bg-brand-100 px-2 py-1.5 text-[10.5px] font-medium text-brand-600">
+                  ✓ "{broadcast}" sent to all parents on {route.code}
+                </p>
+              )}
+            </div>
+
+            <CommsBox
+              routeId={route.id}
+              routeCode={route.code}
+              guardianName={driver?.name ?? "Driver"}
+              driverName="Parents on this route"
+              simSec={snapshot.simSec}
+              canMessage={false}
+              seed={sent}
+            />
+            {sent.length === 0 && (
+              <p className="px-1 text-[9.5px] leading-relaxed text-ink-500">
+                Messages you send here appear in every parent's Driver tab for {route.code}.
+              </p>
+            )}
+          </div>
+        )}
+
         {tab === "report" && (
           <div className="space-y-3 p-4">
             <div className="card p-4">
@@ -276,6 +343,7 @@ export default function DriverPage() {
           {([
             ["run", "My run", "M4 17V7a2 2 0 0 1 2-2h9l3 4v8"],
             ["manifest", "Manifest", "M7 3h7l4 4v14H7zM10 12h8M10 16h5"],
+            ["messages", "Parents", "M4 5h13a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"],
             ["report", "Report", "M12 4v9M12 17v.5"],
           ] as const).map(([key, label, path]) => (
             <button

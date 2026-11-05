@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import AppBar from "@/components/AppBar";
 import FleetMap from "@/components/FleetMap";
 import BusDetail from "@/components/BusDetail";
@@ -458,7 +458,6 @@ function Alerts({ snapshot, onOpenBus }: { snapshot: Snapshot; onOpenBus: (id: s
   return (
     <div className="space-y-2">
       {snapshot.alerts.map((a) => {
-        const bus = snapshot.buses.find((b) => b.id === a.busId);
         const route = snapshot.routes.find((r) => r.id === a.routeId);
         const done = a.acknowledged || ack[a.id];
         const tone =
