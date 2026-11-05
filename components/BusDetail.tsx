@@ -29,7 +29,7 @@ export default function BusDetail({
       <button
         aria-label="Close"
         onClick={onClose}
-        className="absolute inset-0 bg-ink-900/25 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-canvas/70 backdrop-blur-[3px]"
       />
       <section className="relative flex h-full w-full max-w-[460px] flex-col border-l border-line bg-paper shadow-2xl">
         {/* header */}
@@ -37,8 +37,8 @@ export default function BusDetail({
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <span
-                className="grid size-11 place-items-center rounded-xl text-white"
-                style={{ background: bus.status === "breakdown" ? "#cf2f52" : route.color }}
+                className="grid size-11 place-items-center rounded-xl text-canvas"
+                style={{ background: bus.status === "breakdown" ? "#ec4d68" : route.color }}
               >
                 <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.9">
                   <path d="M5 16V8a2 2 0 0 1 2-2h8l2 3v7" strokeLinecap="round" />
@@ -127,7 +127,7 @@ export default function BusDetail({
                             />
                           );
                         })}
-                        <circle cx={p.x} cy={p.y} r="7" fill={route.color} stroke="#fffefa" strokeWidth="2.5" />
+                        <circle cx={p.x} cy={p.y} r="7" fill={route.color} stroke="#10150e" strokeWidth="2.5" />
                       </svg>
                     );
                   }}
@@ -347,7 +347,7 @@ function ActionButton({ label, tone }: { label: string; tone: "brand" | "neutral
       className={cx(
         "rounded-lg px-3 py-2 text-[11.5px] font-semibold transition",
         tone === "brand"
-          ? "bg-brand-700 text-paper-2 hover:bg-brand-800"
+          ? "bg-brand-600 text-canvas hover:bg-brand-500"
           : "border border-line bg-paper-2 text-ink-700 hover:border-ink-300",
         done && "!bg-brand-100 !text-brand-800"
       )}

@@ -66,7 +66,7 @@ export default function ConsoleShell() {
                   "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition",
                   focusRouteId
                     ? "border-line bg-paper-2 text-ink-600 hover:border-ink-300"
-                    : "border-transparent bg-ink-900 text-paper-2"
+                    : "border-transparent bg-brand-600 text-canvas"
                 )}
               >
                 All routes
@@ -167,7 +167,7 @@ export default function ConsoleShell() {
               >
                 {t === "fleet" ? "Readiness" : t === "alerts" ? "Alerts" : "Activity"}
                 {t === "alerts" && snapshot.kpis.openAlerts > 0 && (
-                  <span className="ml-1.5 rounded-full bg-berry-500 px-1.5 text-[10px] font-bold text-white">
+                  <span className="ml-1.5 rounded-full bg-berry-500 px-1.5 text-[10px] font-bold text-canvas">
                     {snapshot.kpis.openAlerts}
                   </span>
                 )}
@@ -236,7 +236,7 @@ function KpiStrip({ snapshot }: { snapshot: Snapshot }) {
             size={38}
             stroke={4}
             color={
-              ("tone" in it && it.tone === "berry") ? "#cf2f52" : ("tone" in it && it.tone === "sun") ? "#e08210" : "#0e7c5a"
+              ("tone" in it && it.tone === "berry") ? "#ec4d68" : ("tone" in it && it.tone === "sun") ? "#f0a63f" : "#c9f27a"
             }
           />
           <div className="min-w-0">
@@ -273,13 +273,13 @@ function BusRow({
     <div
       className={cx(
         "group mb-1 rounded-xl border px-2.5 py-2.5 transition",
-        active ? "border-ink-900/12 bg-paper-2 shadow-sm" : "border-transparent hover:bg-paper-2/70"
+        active ? "border-ink-900/15 bg-paper-3" : "border-transparent hover:bg-paper-2/70"
       )}
     >
       <button onClick={onClick} className="flex w-full items-start gap-2.5 text-left">
         <span
-          className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg text-white"
-          style={{ background: bus.status === "breakdown" ? "#cf2f52" : route.color }}
+          className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg text-canvas"
+          style={{ background: bus.status === "breakdown" ? "#ec4d68" : route.color }}
         >
           <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M5 16V8a2 2 0 0 1 2-2h8l2 3v7" strokeLinecap="round" />
@@ -351,7 +351,7 @@ function SelectedBusCard({
     <div className="rise card overflow-hidden p-3.5">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-2.5">
-          <span className="grid size-9 place-items-center rounded-xl text-white" style={{ background: route.color }}>
+          <span className="grid size-9 place-items-center rounded-xl text-canvas" style={{ background: route.color }}>
             <svg viewBox="0 0 24 24" className="size-4.5" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 16V8a2 2 0 0 1 2-2h8l2 3v7" strokeLinecap="round" />
               <circle cx="8" cy="16.6" r="1.2" />
@@ -390,7 +390,7 @@ function SelectedBusCard({
 
       <button
         onClick={onOpen}
-        className="mt-3 w-full rounded-lg bg-ink-900 py-2 text-[12px] font-semibold text-paper-2 transition hover:bg-ink-800"
+        className="mt-3 w-full rounded-full bg-brand-600 py-2 text-[12px] font-bold text-canvas transition hover:bg-brand-500"
       >
         Open live trip sheet
       </button>
@@ -458,7 +458,7 @@ function Alerts({ snapshot, onOpenBus }: { snapshot: Snapshot; onOpenBus: (id: s
               {!done && (
                 <button
                   onClick={() => setAck((p) => ({ ...p, [a.id]: true }))}
-                  className="rounded-md bg-ink-900 px-2 py-1 text-[10.5px] font-semibold text-paper-2 hover:bg-ink-800"
+                  className="rounded-full bg-brand-600 px-2.5 py-1 text-[10.5px] font-bold text-canvas hover:bg-brand-500"
                 >
                   Acknowledge
                 </button>
@@ -557,7 +557,7 @@ function Readiness({ snapshot }: { snapshot: Snapshot }) {
 
 function ConsoleSkeleton({ error }: { error: string | null }) {
   return (
-    <div className="grid h-dvh place-items-center bg-paper">
+    <div className="grid h-dvh place-items-center bg-canvas">
       <div className="text-center">
         <div className="mx-auto grid size-11 animate-pulse place-items-center rounded-xl bg-brand-700/10">
           <svg viewBox="0 0 24 24" className="size-5 text-brand-600" fill="none" stroke="currentColor" strokeWidth="2">

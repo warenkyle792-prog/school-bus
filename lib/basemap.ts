@@ -147,6 +147,39 @@ export const RIVER: LatLng[] = [
   p(-1.2942, 36.8721), p(-1.2962, 36.8882),
 ];
 
+/**
+ * Faint topographic contour rings. Hand-placed around the ridges that actually
+ * shape Nairobi's geography (Ngong hills to the west, the river valley, the
+ * higher ground north of the city) so the texture reads as terrain, not noise.
+ */
+function ring(cLat: number, cLng: number, rLat: number, rLng: number, points = 26, wobble = 0.16, seed = 1) {
+  const out: LatLng[] = [];
+  for (let i = 0; i < points; i++) {
+    const a = (i / points) * Math.PI * 2;
+    const n = Math.sin(a * 3 + seed) * wobble + Math.cos(a * 2 + seed * 1.7) * wobble * 0.6;
+    out.push(p(cLat + Math.sin(a) * rLat * (1 + n), cLng + Math.cos(a) * rLng * (1 + n)));
+  }
+  return out;
+}
+
+const CENTERS: Array<[number, number, number, number, number]> = [
+  // lat, lng, radiusLat, radiusLng, seed
+  [-1.3410, 36.7300, 0.0320, 0.0360, 1],
+  [-1.3120, 36.7660, 0.0240, 0.0290, 2],
+  [-1.2340, 36.8480, 0.0300, 0.0330, 3],
+  [-1.2740, 36.8800, 0.0270, 0.0300, 4],
+  [-1.3080, 36.8560, 0.0230, 0.0260, 5],
+  [-1.2580, 36.7620, 0.0260, 0.0280, 6],
+  [-1.3620, 36.8300, 0.0340, 0.0400, 7],
+  [-1.2760, 36.8120, 0.0190, 0.0210, 8],
+];
+
+export const CONTOURS: LatLng[][] = CENTERS.flatMap(([lat, lng, rLat, rLng, seed]) =>
+  [1, 1.32, 1.68, 2.1].map((k, i) =>
+    ring(lat, lng, rLat * k, rLng * k, 24 + i * 4, 0.14, seed + i * 0.8)
+  )
+);
+
 export const LABELS: MapLabel[] = [
   { name: "Parklands", at: p(-1.2632, 36.8252), kind: "area" },
   { name: "Westlands", at: p(-1.2662, 36.8042), kind: "area" },

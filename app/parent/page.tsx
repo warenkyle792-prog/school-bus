@@ -76,7 +76,7 @@ export default function ParentPage() {
               onClick={() => setActiveChild(c!.id)}
               className={cx(
                 "flex flex-1 items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition",
-                active ? "border-ink-900/15 bg-paper-2 shadow-sm" : "border-transparent bg-ink-100/50 hover:bg-paper-2"
+                active ? "border-brand-600/30 bg-paper-3" : "border-transparent bg-paper-2/40 hover:bg-paper-2"
               )}
             >
               <Avatar name={c!.name} hue={c!.avatarHue} size={28} />
@@ -112,16 +112,16 @@ export default function ParentPage() {
                         <path d={d} fill="none" stroke={route.color} strokeWidth="4" strokeLinecap="round" strokeOpacity="0.85" />
                         <line x1={b.x} y1={b.y} x2={s.x} y2={s.y} stroke={route.color} strokeWidth="2" strokeDasharray="4 4" strokeOpacity="0.55" />
                         <g>
-                          <circle cx={s.x} cy={s.y} r="12" fill="#fffefa" stroke={route.color} strokeWidth="2.5" />
+                          <circle cx={s.x} cy={s.y} r="12" fill="#10150e" stroke={route.color} strokeWidth="2.5" />
                           <text x={s.x} y={s.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill={route.color}>
                             {child.name[0]}
                           </text>
                         </g>
                         <g>
-                          <circle cx={school.x} cy={school.y} r="7" fill="#0e7c5a" stroke="#fffefa" strokeWidth="2" />
+                          <circle cx={school.x} cy={school.y} r="7" fill="#c9f27a" stroke="#10150e" strokeWidth="2" />
                         </g>
                         <circle cx={b.x} cy={b.y} r="15" fill={route.color} opacity="0.18" />
-                        <circle cx={b.x} cy={b.y} r="8.5" fill={route.color} stroke="#fffefa" strokeWidth="2.5" />
+                        <circle cx={b.x} cy={b.y} r="8.5" fill={route.color} stroke="#10150e" strokeWidth="2.5" />
                       </svg>
                     );
                   }}
@@ -129,22 +129,17 @@ export default function ParentPage() {
               </div>
 
               <div className="border-t border-line px-4 py-3.5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-[13px] font-semibold">{route.code} · {bus.plate}</p>
-                      <StatusPill status={bus.status} size="sm" />
-                    </div>
-                    <p className="mt-0.5 text-[11.5px] text-ink-500">
-                      {driver.name} · {snapshot.attendants.find((a) => a.id === bus.attendantId)?.name}
-                    </p>
+                {/* ETA ticket, mirroring the reference's "Arriving in 4m" panel */}
+                <div className="rounded-2xl border border-brand-600/25 bg-brand-100/60 px-3.5 py-3">
+                  <div className="flex items-center justify-between">
+                    <LiveBadge label="Live tracking" />
+                    <span className="num text-[10px] font-medium text-brand-700/80">
+                      {route.code} · {bus.plate}
+                    </span>
                   </div>
-                  <LiveBadge label="Tracking" />
-                </div>
-
-                <div className="mt-3 flex items-end justify-between rounded-xl bg-brand-100/70 px-3 py-2.5">
+                  <div className="mt-2 flex items-end justify-between">
                   <div>
-                    <p className="text-[10px] font-bold tracking-wide text-brand-800/70 uppercase">
+                    <p className="text-[10px] font-bold tracking-wide text-brand-700/80 uppercase">
                       {!stopIsAhead
                         ? child.boardStatus === "onboard"
                           ? "Your child is on the bus"
@@ -153,17 +148,28 @@ export default function ParentPage() {
                           ? "Arrives at your stop"
                           : "Reaches your stop"}
                     </p>
-                    <p className="num text-[26px] leading-tight font-semibold text-brand-900">
+                    <p className="num text-[30px] leading-none font-semibold text-brand-700">
                       {stopIsAhead ? etaMin : "--"}
                       <span className="ml-1 text-[13px] font-medium">{stopIsAhead ? "min" : ""}</span>
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10.5px] text-brand-800/70">{stop.name}</p>
-                    <p className="num text-[11px] font-semibold text-brand-900">
+                    <p className="text-[10.5px] font-medium text-ink-600">{stop.name}</p>
+                    <p className="num text-[11px] font-semibold text-brand-700">
                       {bus.delaySec > 120 ? `+${Math.round(bus.delaySec / 60)} min late` : "on schedule"}
                     </p>
                   </div>
+                  </div>
+                </div>
+
+                <div className="mt-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Avatar name={driver.name} hue={driver.avatarHue} size={24} />
+                    <p className="text-[11px] text-ink-500">
+                      {driver.name} · {snapshot.attendants.find((a) => a.id === bus.attendantId)?.name.split(" ")[0]}
+                    </p>
+                  </div>
+                  <StatusPill status={bus.status} size="sm" />
                 </div>
               </div>
             </div>
@@ -276,7 +282,7 @@ export default function ParentPage() {
               <p className="label">School desk</p>
               <p className="mt-1.5 text-[12.5px] font-semibold">{snapshot.school.name}</p>
               <p className="text-[11.5px] text-ink-500">{snapshot.school.city} · {snapshot.school.term}</p>
-              <button className="mt-3 w-full rounded-lg bg-brand-700 py-2 text-[12px] font-semibold text-paper-2">
+              <button className="mt-3 w-full rounded-full bg-brand-600 py-2.5 text-[12px] font-bold text-canvas">
                 Call transport desk
               </button>
             </div>
@@ -326,9 +332,9 @@ function Shell({
   schoolName: string;
 }) {
   return (
-    <div className="flex min-h-dvh justify-center bg-ink-800/95 p-0 sm:p-8">
+    <div className="flex min-h-dvh justify-center bg-canvas p-0 sm:p-8">
       <ThemeBoot />
-      <div className="relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-paper sm:h-[860px] sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem] sm:border sm:border-ink-700/40 sm:shadow-2xl">
+      <div className="relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-paper sm:h-[860px] sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem] sm:border sm:border-line sm:shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)]">
         <header className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
           <div>
             <p className="text-[10px] font-semibold tracking-wider text-ink-400 uppercase">Safiri</p>
@@ -371,7 +377,7 @@ function PrefRow({ label, on }: { label: string; on: boolean }) {
       >
         <span
           className={cx(
-            "absolute top-0.5 size-3.5 rounded-full bg-white shadow transition-all",
+            "absolute top-0.5 size-3.5 rounded-full bg-canvas shadow transition-all",
             enabled ? "left-4" : "left-0.5"
           )}
         />

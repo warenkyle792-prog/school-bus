@@ -4,7 +4,7 @@ import type { Bus, RunStatus } from "@/lib/types";
 import { cx, initials } from "@/lib/format";
 
 const STATUS: Record<RunStatus, { label: string; dot: string; bg: string; text: string }> = {
-  on_time: { label: "On time", dot: "bg-brand-500", bg: "bg-brand-100", text: "text-brand-800" },
+  on_time: { label: "On time", dot: "bg-brand-600", bg: "bg-brand-100", text: "text-brand-700" },
   delayed: { label: "Delayed", dot: "bg-sun-500", bg: "bg-sun-100", text: "text-sun-600" },
   breakdown: { label: "Breakdown", dot: "bg-berry-500", bg: "bg-berry-100", text: "text-berry-600" },
   finished: { label: "At school", dot: "bg-sky-500", bg: "bg-sky-100", text: "text-sky-600" },
@@ -48,8 +48,9 @@ export function Avatar({
         width: size,
         height: size,
         fontSize: size * 0.36,
-        background: `hsl(${hue} 42% 90%)`,
-        color: `hsl(${hue} 48% 30%)`,
+        background: `hsl(${hue} 34% 22%)`,
+        color: `hsl(${hue} 62% 76%)`,
+        boxShadow: `inset 0 0 0 1px hsl(${hue} 30% 30% / 0.9)`,
       }}
     >
       {initials(name)}
@@ -76,11 +77,14 @@ export function RouteChip({
       className={cx(
         "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11.5px] font-semibold transition",
         active
-          ? "border-ink-900/15 bg-ink-900 text-paper-2"
-          : "border-line bg-paper-2 text-ink-700 hover:border-ink-300"
+          ? "border-brand-600/40 bg-brand-600 text-canvas"
+          : "border-line bg-paper-2/80 text-ink-700 backdrop-blur hover:border-ink-300 hover:text-ink-900"
       )}
     >
-      <span className="size-1.5 rounded-full" style={{ background: active ? "#fff" : color }} />
+      <span
+        className="size-1.5 rounded-full"
+        style={{ background: active ? "#0c110b" : color, boxShadow: active ? "none" : `0 0 6px ${color}` }}
+      />
       {code}
       {name && <span className="font-normal opacity-60">{name}</span>}
     </button>
@@ -89,7 +93,7 @@ export function RouteChip({
 
 export function Sparkline({
   data,
-  color = "#0e7c5a",
+  color = "#c9f27a",
   width = 96,
   height = 28,
   fill = true,
@@ -116,7 +120,7 @@ export function Sparkline({
     <svg width={width} height={height} className="overflow-visible">
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.22" />
+          <stop offset="0%" stopColor={color} stopOpacity="0.24" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
@@ -132,8 +136,11 @@ export function OccupancyBar({ bus }: { bus: Bus }) {
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink-100">
       <div
-        className={cx("h-full rounded-full transition-all duration-700", pct > 92 ? "bg-berry-500" : pct > 75 ? "bg-sun-500" : "bg-brand-500")}
-        style={{ width: `${pct}%` }}
+        className={cx(
+          "h-full rounded-full transition-all duration-700",
+          pct > 92 ? "bg-berry-500" : pct > 75 ? "bg-sun-500" : "bg-brand-600"
+        )}
+        style={{ width: `${pct}%`, boxShadow: pct > 92 ? "none" : "0 0 10px -2px currentColor" }}
       />
     </div>
   );
@@ -143,8 +150,8 @@ export function Ring({
   value,
   size = 56,
   stroke = 5,
-  color = "#0e7c5a",
-  track = "#eaf1ee",
+  color = "#c9f27a",
+  track = "#262e21",
   children,
 }: {
   value: number;
@@ -171,6 +178,7 @@ export function Ring({
           strokeDasharray={c}
           strokeDashoffset={c - (Math.min(100, Math.max(0, value)) / 100) * c}
           className="transition-all duration-700"
+          style={{ filter: `drop-shadow(0 0 4px ${color}55)` }}
         />
       </svg>
       <div className="absolute inset-0 grid place-items-center">{children}</div>
@@ -180,12 +188,40 @@ export function Ring({
 
 export function LiveBadge({ label = "Live" }: { label?: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-2 py-0.5 text-[10.5px] font-semibold tracking-wide text-brand-800 uppercase">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-600/25 bg-brand-100 px-2 py-0.5 text-[10.5px] font-semibold tracking-wide text-brand-700 uppercase">
       <span className="relative inline-flex size-1.5">
-        <span className="live-dot absolute inset-0 rounded-full text-brand-500" />
-        <span className="relative size-1.5 rounded-full bg-brand-500" />
+        <span className="live-dot absolute inset-0 rounded-full text-brand-600" />
+        <span className="relative size-1.5 rounded-full bg-brand-600" />
       </span>
       {label}
     </span>
+  );
+}
+
+/** Primary call-to-action, straight from the reference: full-width lime pill. */
+export function AccentButton({
+  children,
+  onClick,
+  className = "",
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={cx(
+        "inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 px-5 py-2.5 text-[12.5px] font-bold text-canvas transition",
+        "hover:bg-brand-500 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60",
+        "shadow-[0_0_24px_-6px_rgba(201,242,122,0.45)]",
+        className
+      )}
+    >
+      {children}
+    </button>
   );
 }

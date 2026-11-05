@@ -105,7 +105,7 @@ export default function FleetMap({
                   .join(" ");
                 return (
                   <g key={route.id} opacity={dim ? 0.18 : 1}>
-                    <path d={d} fill="none" stroke="#ffffff" strokeWidth={focusRouteId === route.id ? 8 : 6} strokeLinecap="round" strokeOpacity={0.9} />
+                    <path d={d} fill="none" stroke="#0b110a" strokeWidth={focusRouteId === route.id ? 9 : 7} strokeLinecap="round" strokeOpacity={0.75} />
                     <path
                       d={d}
                       fill="none"
@@ -127,7 +127,7 @@ export default function FleetMap({
                   const active = focusRouteId === route.id;
                   return (
                     <g key={stop.id} className="cursor-pointer" onClick={() => onFocusRoute(active ? null : route.id)}>
-                      <circle cx={x} cy={y} r={active ? 6 : 4.2} fill="#fffefa" stroke={route.color} strokeWidth="2.2" />
+                      <circle cx={x} cy={y} r={active ? 6 : 4.2} fill="#10150e" stroke={route.color} strokeWidth="2.2" />
                       <circle cx={x} cy={y} r={active ? 2.6 : 1.8} fill={route.color} />
                       {active && (
                         <text x={x + 11} y={y + 3.5} fontSize="9.5" fontWeight="600" fill="#3c5f52">
@@ -141,16 +141,16 @@ export default function FleetMap({
 
               {/* school marker */}
               <g>
-                <circle cx={s.x} cy={s.y} r="26" fill="#0e7c5a" opacity="0.1" />
-                <circle cx={s.x} cy={s.y} r="17" fill="#0e7c5a" opacity="0.14" />
-                <circle cx={s.x} cy={s.y} r="11" fill="#fffefa" stroke="#0e7c5a" strokeWidth="2.4" />
+                <circle cx={s.x} cy={s.y} r="26" fill="#c9f27a" opacity="0.12" />
+                <circle cx={s.x} cy={s.y} r="17" fill="#c9f27a" opacity="0.18" />
+                <circle cx={s.x} cy={s.y} r="11" fill="#10150e" stroke="#c9f27a" strokeWidth="2.4" />
                 <path
                   d={`M${s.x - 4.6},${s.y + 0.4} L${s.x + 4.6},${s.y + 0.4} M${s.x},${s.y - 4.6} L${s.x},${s.y + 4.6}`}
-                  stroke="#0e7c5a"
+                  stroke="#c9f27a"
                   strokeWidth="2"
                   strokeLinecap="round"
                 />
-                <text x={s.x + 18} y={s.y + 4} fontSize="11" fontWeight="700" fill="#0c5c48">
+                <text x={s.x + 18} y={s.y + 4} fontSize="11" fontWeight="700" fill="#d2f888">
                   {snapshot.school.shortName}
                 </text>
               </g>
@@ -182,10 +182,10 @@ export default function FleetMap({
                     <span className="absolute inset-0 -m-2 animate-ping rounded-full bg-berry-500/40" />
                   )}
                   <span
-                    className={`relative grid size-8 place-items-center rounded-full border-2 border-paper-2 text-white shadow-md transition-transform duration-200 group-hover:scale-110 ${
+                    className={`relative grid size-8 place-items-center rounded-full border-2 border-canvas text-canvas shadow-lg transition-transform duration-200 group-hover:scale-110 ${
                       selected ? "ring-2 ring-ink-900/20 scale-110" : ""
                     }`}
-                    style={{ background: critical ? "#cf2f52" : route.color }}
+                    style={{ background: critical ? "#ec4d68" : route.color }}
                   >
                     <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M5 16V8a2 2 0 0 1 2-2h8l2 3v7" strokeLinecap="round" />
@@ -196,8 +196,8 @@ export default function FleetMap({
                   </span>
 
                   {(hover === bus.id || selected) && (
-                    <div className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2.5 w-max -translate-x-1/2 rounded-lg bg-ink-900 px-2.5 py-1.5 text-left shadow-lg">
-                      <p className="text-[11px] font-semibold text-paper-2">{route.code} · {bus.plate}</p>
+                    <div className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2.5 w-max -translate-x-1/2 rounded-lg border border-line bg-paper-3 px-2.5 py-1.5 text-left shadow-xl">
+                      <p className="text-[11px] font-semibold text-ink-900">{route.code} · {bus.plate}</p>
                       <p className="num text-[10px] text-ink-300">
                         {bus.speedKph} kph · {bus.onBoard}/{bus.capacity} on board
                       </p>

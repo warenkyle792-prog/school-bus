@@ -34,16 +34,31 @@ stop → morning pickup run → handover at school → afternoon drop-off run �
 continuous at both turnarounds, so nothing teleports. One scripted breakdown (R-04 on Lang'ata Road)
 gives the console something real to react to.
 
-## Background colour
+## Design language
 
-The whole UI paints from three CSS custom properties — `--color-paper` (page), `--color-paper-2`
-(card surface) and `--color-line` (hairline). Tailwind emits them as `var()` references, so they can
-be changed at runtime without a rebuild.
+Dark olive-charcoal canvas (`#10150e`), lime accent (`#c9f27a`), soft rounded cards and pill
+buttons. The map is a dark topographic style — a deep green-charcoal ground, faint contour lines,
+mossy parks and a glowing accent route line.
 
-Every page has a **Background** control (top right) with six presets and an exact-hex field; the
-choice is saved to `localStorage` and reapplied before first paint, so there is no flash. To change
-the default, edit the `@theme` block in `app/globals.css` — or set `PALETTES` in
-`components/ThemePicker.tsx` to make a preset the default.
+The whole UI paints from CSS custom properties, so the palette is swappable at runtime:
+
+| Token | Role |
+| ----- | ---- |
+| `--color-canvas` | deepest layer behind the app frames |
+| `--color-paper` / `--color-paper-2` / `--color-paper-3` | page, card, raised surface |
+| `--color-line` | hairlines |
+| `--color-ink-50…900` | text scale, **inverted** (900 = brightest) |
+| `--color-brand-100…900` | lime accent ramp (100 = dim tint, 600 = the accent) |
+
+Every page has a **Background** control (top right) with dark presets (Olive, Forest, Graphite,
+Midnight) and two light ones, plus an exact-hex field. Light and dark are handled properly: picking a
+light background flips the ink scale to dark text, picking a dark one flips it back. The choice is
+saved to `localStorage` and re-applied by a pre-paint script, so there is no flash on reload or
+navigation.
+
+To change the default look, edit the `@theme` block in `app/globals.css`. To add a preset, add it to
+`PALETTES` in `components/ThemePicker.tsx` — and mirror the token math in the boot script inside
+`app/layout.tsx`.
 
 ## Architecture
 

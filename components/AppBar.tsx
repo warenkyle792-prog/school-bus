@@ -20,10 +20,10 @@ export default function AppBar({
 }) {
   const path = usePathname();
   return (
-    <header className="flex h-14 items-center justify-between gap-4 border-b border-line bg-paper/80 px-5 backdrop-blur-md">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-line bg-paper/85 px-4 backdrop-blur-xl sm:px-5">
       <div className="flex items-center gap-5">
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="grid size-7 place-items-center rounded-lg bg-brand-700 text-paper-2">
+          <span className="grid size-8 place-items-center rounded-lg bg-brand-600 text-canvas">
             <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 17V7a2 2 0 0 1 2-2h9l3 4v8" strokeLinecap="round" />
               <path d="M4 11h14M4 17h1.5M20 17h-1.5" strokeLinecap="round" />
@@ -43,7 +43,7 @@ export default function AppBar({
                 href={n.href}
                 className={cx(
                   "rounded-full px-3 py-1.5 text-[13px] font-medium transition",
-                  active ? "bg-ink-900 text-paper-2" : "text-ink-600 hover:bg-ink-100/70 hover:text-ink-900"
+                  active ? "bg-paper-3 text-ink-900" : "text-ink-500 hover:bg-paper-2 hover:text-ink-800"
                 )}
               >
                 {n.label}

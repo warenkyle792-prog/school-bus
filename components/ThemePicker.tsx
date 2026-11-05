@@ -3,16 +3,26 @@
 import { useEffect, useState } from "react";
 import { cx } from "@/lib/format";
 
-/** Background themes. `paper` is the page, `paper2` is card surface, `line` is the hairline. */
-export type Palette = { id: string; name: string; paper: string; paper2: string; line: string };
+/**
+ * Background themes. `paper` is the page, `paper2` the card surface, `line` the
+ * hairline. Dark presets are the default look (matching the design reference).
+ */
+export type Palette = {
+  id: string;
+  name: string;
+  paper: string;
+  paper2: string;
+  line: string;
+  dark?: boolean;
+};
 
 export const PALETTES: Palette[] = [
+  { id: "olive", name: "Olive", paper: "#10150e", paper2: "#1a2017", line: "#2b3328", dark: true },
+  { id: "forest", name: "Forest", paper: "#0d1a15", paper2: "#14261e", line: "#22392e", dark: true },
+  { id: "graphite", name: "Graphite", paper: "#131313", paper2: "#1c1c1c", line: "#2e2e2e", dark: true },
+  { id: "midnight", name: "Midnight", paper: "#0e1420", paper2: "#161e2d", line: "#26303f", dark: true },
   { id: "paper", name: "Paper", paper: "#f7f5ef", paper2: "#fffefa", line: "#e3e0d6" },
-  { id: "porcelain", name: "Porcelain", paper: "#f4f6f4", paper2: "#ffffff", line: "#e2e7e1" },
-  { id: "mint", name: "Mint", paper: "#eaf3ee", paper2: "#fafffc", line: "#d7e6db" },
-  { id: "bone", name: "Bone", paper: "#f2eee4", paper2: "#fffdf7", line: "#e2dccc" },
   { id: "sand", name: "Sand", paper: "#f6ecdd", paper2: "#fffbf3", line: "#e7d9c2" },
-  { id: "blueprint", name: "Blueprint", paper: "#eef2f7", paper2: "#ffffff", line: "#dce3ec" },
 ];
 
 const STORAGE_KEY = "safiri.palette";
@@ -43,26 +53,70 @@ function mix(hex: string, target: string, amount: number) {
   );
 }
 
+function luminance(hex: string): number {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return 0;
+  const [r, g, b] = rgb.map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
 /** Build a coherent card + hairline from a single background colour. */
 export function paletteFromHex(hex: string): Palette {
   const clean = hex.startsWith("#") ? hex : `#${hex}`;
+  const dark = luminance(clean) < 0.42;
   return {
     id: "custom",
     name: "Custom",
     paper: clean,
-    paper2: mix(clean, "#ffffff", 0.62),
-    line: mix(clean, "#10201b", 0.12),
+    paper2: dark ? mix(clean, "#ffffff", 0.055) : mix(clean, "#ffffff", 0.62),
+    line: dark ? mix(clean, "#ffffff", 0.1) : mix(clean, "#10201b", 0.12),
+    dark,
   };
 }
 
 export function applyPalette(p: Palette) {
   const root = document.documentElement;
+  const dark = p.dark ?? luminance(p.paper) < 0.42;
   root.style.setProperty("--color-paper", p.paper);
   root.style.setProperty("--color-paper-2", p.paper2);
   root.style.setProperty("--color-line", p.line);
-  root.style.setProperty("--color-ink-50", mix(p.paper, "#ffffff", 0.4));
-  root.style.setProperty("--color-ink-100", mix(p.paper, "#10201b", 0.055));
+  root.style.setProperty("--color-canvas", dark ? mix(p.paper, "#000000", 0.45) : mix(p.paper, "#000000", 0.06));
+
+  if (dark) {
+    // surfaces get lighter as they come forward; text stays light
+    root.style.setProperty("--color-paper-3", mix(p.paper, "#ffffff", 0.11));
+    root.style.setProperty("--color-ink-50", mix(p.paper, "#ffffff", 0.045));
+    root.style.setProperty("--color-ink-100", mix(p.paper, "#ffffff", 0.085));
+    root.style.setProperty("--color-ink-200", mix(p.paper, "#ffffff", 0.14));
+    root.style.setProperty("--color-ink-300", mix(p.paper, "#ffffff", 0.22));
+    root.style.setProperty("--color-ink-400", mix(p.paper, "#ffffff", 0.34));
+    root.style.setProperty("--color-ink-500", mix(p.paper, "#ffffff", 0.47));
+    root.style.setProperty("--color-ink-600", mix(p.paper, "#ffffff", 0.6));
+    root.style.setProperty("--color-ink-700", mix(p.paper, "#ffffff", 0.74));
+    root.style.setProperty("--color-ink-800", mix(p.paper, "#ffffff", 0.88));
+    root.style.setProperty("--color-ink-900", mix(p.paper, "#ffffff", 0.96));
+  } else {
+    root.style.setProperty("--color-paper-3", mix(p.paper, "#ffffff", 0.5));
+    root.style.setProperty("--color-ink-50", mix(p.paper, "#ffffff", 0.4));
+    root.style.setProperty("--color-ink-100", mix(p.paper, "#10201b", 0.055));
+    root.style.setProperty("--color-ink-200", "#d7e3dd");
+    root.style.setProperty("--color-ink-300", "#b6c9c1");
+    root.style.setProperty("--color-ink-400", "#8aa79b");
+    root.style.setProperty("--color-ink-500", "#5d7d70");
+    root.style.setProperty("--color-ink-600", "#3c5f52");
+    root.style.setProperty("--color-ink-700", "#22453a");
+    root.style.setProperty("--color-ink-800", "#172e26");
+    root.style.setProperty("--color-ink-900", "#10201b");
+  }
+  root.style.setProperty("--color-brand-700", dark ? "#d2f888" : "#b2e75c");
+  root.style.setProperty("--color-brand-600", "#c9f27a");
+  root.style.setProperty("--color-brand-100", dark ? "#28331c" : "#eafcd0");
+  root.style.setProperty("--color-brand-200", dark ? "#3a4d26" : "#d9f6ac");
   root.dataset.palette = p.id;
+  root.dataset.scheme = dark ? "dark" : "light";
 }
 
 export function loadSavedPalette(): Palette | null {
@@ -89,7 +143,7 @@ export function ThemeBoot() {
 export default function ThemePicker({ className = "" }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState<Palette>(PALETTES[0]);
-  const [hex, setHex] = useState("#f7f5ef");
+  const [hex, setHex] = useState("#10150e");
 
   useEffect(() => {
     const saved = loadSavedPalette();
@@ -170,7 +224,7 @@ export default function ThemePicker({ className = "" }: { className?: string }) 
                   value={hex}
                   onChange={(e) => onHex(e.target.value)}
                   spellCheck={false}
-                  placeholder="#f7f5ef"
+                  placeholder="#10150e"
                   className="num w-full rounded-md border border-line bg-paper px-2 py-1.5 text-[11.5px] text-ink-800 outline-none focus:border-brand-400"
                 />
               </div>

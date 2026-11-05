@@ -58,7 +58,7 @@ export default function DriverPage() {
       <div className="shrink-0 border-b border-line bg-paper-2 px-4 py-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="grid size-9 place-items-center rounded-lg text-white" style={{ background: route.color }}>
+            <span className="grid size-9 place-items-center rounded-lg text-canvas" style={{ background: route.color }}>
               <svg viewBox="0 0 24 24" className="size-4.5" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M5 16V8a2 2 0 0 1 2-2h8l2 3v7" strokeLinecap="round" />
                 <circle cx="8" cy="16.6" r="1.2" />
@@ -76,7 +76,7 @@ export default function DriverPage() {
             onClick={() => setSos(true)}
             className={cx(
               "rounded-full px-3.5 py-2 text-[11.5px] font-bold tracking-wide uppercase transition",
-              sos ? "bg-berry-500 text-white" : "border border-berry-500/40 bg-berry-100 text-berry-600"
+              sos ? "bg-berry-500 text-canvas" : "border border-berry-500/40 bg-berry-100 text-berry-600"
             )}
           >
             {sos ? "SOS sent" : "SOS"}
@@ -116,8 +116,8 @@ export default function DriverPage() {
                   className={cx(
                     "rounded-xl py-2.5 text-[12.5px] font-bold transition",
                     confirmed.includes(matchedStop.id)
-                      ? "bg-brand-200 text-brand-800"
-                      : "bg-brand-700 text-paper-2 hover:bg-brand-800"
+                      ? "bg-brand-100 text-brand-700"
+                      : "bg-brand-600 text-canvas hover:bg-brand-500"
                   )}
                 >
                   {confirmed.includes(matchedStop.id) ? "✓ Stop confirmed" : "Confirm boarding"}
@@ -159,7 +159,7 @@ export default function DriverPage() {
                       <span
                         className={cx(
                           "grid size-6 shrink-0 place-items-center rounded-full border-2 transition",
-                          on ? "border-brand-600 bg-brand-600 text-white" : "border-ink-200 text-transparent"
+                          on ? "border-brand-600 bg-brand-600 text-canvas" : "border-ink-200 text-transparent"
                         )}
                       >
                         <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.4">
@@ -259,7 +259,7 @@ export default function DriverPage() {
             <div className="card p-4">
               <p className="label">Emergency</p>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <button className="rounded-xl bg-berry-500 py-3 text-[12.5px] font-bold text-white">Panic button</button>
+                <button className="rounded-xl bg-berry-500 py-3 text-[12.5px] font-bold text-canvas">Panic button</button>
                 <button className="rounded-xl border border-line bg-paper-2 py-3 text-[12.5px] font-bold text-ink-700">
                   Call desk
                 </button>
@@ -295,7 +295,7 @@ export default function DriverPage() {
       </nav>
 
       {sos && (
-        <div className="absolute inset-0 z-30 grid place-items-center bg-ink-900/70 p-6 backdrop-blur-sm">
+        <div className="absolute inset-0 z-30 grid place-items-center bg-canvas/80 p-6 backdrop-blur-sm">
           <div className="w-full rounded-2xl bg-paper p-5 text-center">
             <div className="mx-auto grid size-12 place-items-center rounded-full bg-berry-100 text-berry-600">
               <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2">
@@ -309,7 +309,7 @@ export default function DriverPage() {
             </p>
             <button
               onClick={() => setSos(false)}
-              className="mt-4 w-full rounded-xl bg-ink-900 py-2.5 text-[12.5px] font-semibold text-paper-2"
+              className="mt-4 w-full rounded-full bg-paper-3 py-2.5 text-[12.5px] font-semibold text-ink-900"
             >
               Stand down
             </button>
@@ -322,9 +322,9 @@ export default function DriverPage() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-dvh justify-center bg-ink-800/95 p-0 sm:p-8">
+    <div className="flex min-h-dvh justify-center bg-canvas p-0 sm:p-8">
       <ThemeBoot />
-      <div className="relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-paper sm:h-[860px] sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem] sm:border sm:border-ink-700/40 sm:shadow-2xl">
+      <div className="relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-paper sm:h-[860px] sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem] sm:border sm:border-line sm:shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)]">
         <header className="flex shrink-0 items-center justify-between border-b border-line px-4 py-2.5">
           <p className="text-[11px] font-semibold tracking-wider text-ink-400 uppercase">Safiri driver</p>
           <div className="flex items-center gap-2">
