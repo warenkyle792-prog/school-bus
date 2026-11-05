@@ -5,6 +5,7 @@ import Link from "next/link";
 import MapCanvas from "@/components/MapCanvas";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
 import { Avatar, LiveBadge, StatusPill } from "@/components/ui";
+import ThemePicker, { ThemeBoot } from "@/components/ThemePicker";
 import { cx, fmtDuration } from "@/lib/format";
 
 /**
@@ -326,6 +327,7 @@ function Shell({
 }) {
   return (
     <div className="flex min-h-dvh justify-center bg-ink-800/95 p-0 sm:p-8">
+      <ThemeBoot />
       <div className="relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-paper sm:h-[860px] sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem] sm:border sm:border-ink-700/40 sm:shadow-2xl">
         <header className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
           <div>
@@ -333,6 +335,7 @@ function Shell({
             <p className="text-[13px] leading-tight font-semibold">{schoolName}</p>
           </div>
           <div className="flex items-center gap-2">
+            <ThemePicker />
             {clock && <span className="num rounded-full bg-ink-100 px-2 py-0.5 text-[11px] font-medium text-ink-600">{clock}</span>}
             <Link href="/console" className="grid size-7 place-items-center rounded-full border border-line bg-paper-2 text-ink-500">
               <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">

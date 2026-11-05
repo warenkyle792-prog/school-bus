@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cx } from "@/lib/format";
+import ThemePicker from "./ThemePicker";
 
 const NAV = [
   { href: "/console", label: "Console" },
@@ -53,6 +54,7 @@ export default function AppBar({
       </div>
 
       <div className="flex items-center gap-3">
+        <ThemePicker />
         {clock && (
           <span className="num hidden items-center gap-1.5 rounded-full border border-line bg-paper-2 px-2.5 py-1 text-[12px] font-medium text-ink-700 sm:flex">
             <svg viewBox="0 0 16 16" className="size-3.5 text-ink-400" fill="none" stroke="currentColor" strokeWidth="1.6">

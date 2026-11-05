@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ThemePicker, { ThemeBoot } from "@/components/ThemePicker";
 
 const portals = [
   {
@@ -27,7 +28,11 @@ const portals = [
 export default function Home() {
   return (
     <main className="min-h-dvh bg-paper">
+      <ThemeBoot />
       <div className="mx-auto max-w-6xl px-6 py-14 sm:py-20">
+        <div className="mb-6 flex justify-end">
+          <ThemePicker />
+        </div>
         <div className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-xl bg-brand-700 text-paper-2 shadow-sm">
             <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.9">

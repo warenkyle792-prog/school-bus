@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
 import { Avatar } from "@/components/ui";
+import ThemePicker, { ThemeBoot } from "@/components/ThemePicker";
 import { cx, fmtDuration } from "@/lib/format";
 import type { Snapshot } from "@/lib/types";
 
@@ -322,12 +323,16 @@ export default function DriverPage() {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh justify-center bg-ink-800/95 p-0 sm:p-8">
+      <ThemeBoot />
       <div className="relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-paper sm:h-[860px] sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem] sm:border sm:border-ink-700/40 sm:shadow-2xl">
         <header className="flex shrink-0 items-center justify-between border-b border-line px-4 py-2.5">
           <p className="text-[11px] font-semibold tracking-wider text-ink-400 uppercase">Safiri driver</p>
-          <Link href="/console" className="text-[11px] font-medium text-ink-500 underline decoration-line underline-offset-2">
-            Open console
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemePicker />
+            <Link href="/console" className="text-[11px] font-medium text-ink-500 underline decoration-line underline-offset-2">
+              Console
+            </Link>
+          </div>
         </header>
         {children}
       </div>

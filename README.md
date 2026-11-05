@@ -34,6 +34,17 @@ stop → morning pickup run → handover at school → afternoon drop-off run �
 continuous at both turnarounds, so nothing teleports. One scripted breakdown (R-04 on Lang'ata Road)
 gives the console something real to react to.
 
+## Background colour
+
+The whole UI paints from three CSS custom properties — `--color-paper` (page), `--color-paper-2`
+(card surface) and `--color-line` (hairline). Tailwind emits them as `var()` references, so they can
+be changed at runtime without a rebuild.
+
+Every page has a **Background** control (top right) with six presets and an exact-hex field; the
+choice is saved to `localStorage` and reapplied before first paint, so there is no flash. To change
+the default, edit the `@theme` block in `app/globals.css` — or set `PALETTES` in
+`components/ThemePicker.tsx` to make a preset the default.
+
 ## Architecture
 
 ```

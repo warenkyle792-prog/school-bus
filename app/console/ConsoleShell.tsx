@@ -5,6 +5,7 @@ import AppBar from "@/components/AppBar";
 import FleetMap from "@/components/FleetMap";
 import BusDetail from "@/components/BusDetail";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
+import { ThemeBoot } from "@/components/ThemePicker";
 import { Avatar, LiveBadge, OccupancyBar, Ring, RouteChip, StatusPill } from "@/components/ui";
 import { cx, fmtDuration, relTime, signedMin } from "@/lib/format";
 import type { Bus, Snapshot } from "@/lib/types";
@@ -16,13 +17,21 @@ export default function ConsoleShell() {
   const [detailBusId, setDetailBusId] = useState<string | null>(null);
   const [tab, setTab] = useState<"fleet" | "alerts" | "log">("fleet");
 
-  if (!snapshot) return <ConsoleSkeleton error={error} />;
+  if (!snapshot) {
+    return (
+      <>
+        <ThemeBoot />
+        <ConsoleSkeleton error={error} />
+      </>
+    );
+  }
 
   const selected = snapshot.buses.find((b) => b.id === selectedBusId) ?? null;
   const detailBus = snapshot.buses.find((b) => b.id === detailBusId) ?? null;
 
   return (
     <div className="flex h-dvh flex-col bg-paper">
+      <ThemeBoot />
       <AppBar
         clock={snapshot.clockLabel}
         right={
