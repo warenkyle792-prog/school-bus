@@ -59,7 +59,7 @@ export default function Home() {
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-canvas via-canvas/55 to-transparent" />
 
           <div className="absolute inset-x-0 bottom-0 p-6 sm:p-9">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-600/30 bg-brand-100/80 px-2.5 py-1 text-[10.5px] font-bold tracking-wide text-brand-700 uppercase backdrop-blur">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-600/30 bg-brand-100 px-2.5 py-1 text-[10.5px] font-bold tracking-wide text-brand-600 uppercase backdrop-blur">
               <span className="size-1.5 rounded-full bg-brand-600" />
               Riverside Academy · Nairobi
             </span>

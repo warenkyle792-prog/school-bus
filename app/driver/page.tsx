@@ -88,7 +88,7 @@ export default function DriverPage() {
         {tab === "run" && (
           <div className="space-y-3 p-4">
             {/* next stop hero */}
-            <div className="rounded-2xl border border-brand-200 bg-brand-100/60 p-4">
+            <div className="rounded-2xl border border-brand-200 bg-brand-100 p-4">
               <div className="flex items-center justify-between">
                 <p className="text-[10px] font-bold tracking-widest text-brand-800/70 uppercase">
                   {confirmed.includes(matchedStop.id) ? "Last confirmed stop" : "Next stop"}
@@ -148,7 +148,7 @@ export default function DriverPage() {
                       onClick={() => setBoarded((p) => ({ ...p, [k.id]: !p[k.id] }))}
                       className={cx(
                         "flex w-full items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left transition",
-                        on ? "border-brand-300 bg-brand-100/70" : "border-line bg-paper-2 hover:border-ink-300"
+                        on ? "border-brand-300 bg-brand-100" : "border-line bg-paper-2 hover:border-ink-300"
                       )}
                     >
                       <Avatar name={k.name} hue={k.avatarHue} size={30} />

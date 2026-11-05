@@ -36,9 +36,26 @@ gives the console something real to react to.
 
 ## Design language
 
-Dark olive-charcoal canvas (`#10150e`), lime accent (`#c9f27a`), soft rounded cards and pill
-buttons. The map is a dark topographic style — a deep green-charcoal ground, faint contour lines,
-mossy parks and a glowing accent route line.
+**Royal Charcoal** surfaces with a lime accent (`#c9f27a`), soft rounded cards and pill buttons. The
+map is a dark topographic style — neutral charcoal ground, faint contour lines, and a glowing accent
+route line.
+
+The surface scale is neutral grey, taken from the reference swatch card:
+
+| Token | Hex | Role |
+| ----- | --- | ---- |
+| `--color-canvas` | `#131316` | deepest layer behind the app frames |
+| `--color-paper` | `#1e2023` | page background |
+| `--color-card-top` → `--color-card-bottom` | `#4a4c50` → `#3a3c40` | card surface, vertical gradient |
+| `--color-paper-3` | `#4c4e51` | raised / selected surface |
+| `--color-line` | `#24262a` | hairlines |
+
+Cards use a soft vertical gradient rather than a flat fill, which is what gives the reference its
+weighted, material feel.
+
+Text contrast was checked against the *card top*, the hardest surface: `ink-900` 8.0:1, `ink-800`
+6.8:1, `ink-700` 5.6:1, `ink-600` 4.7:1 (all pass AA), with `ink-500` 3.7:1 reserved for
+non-essential secondary detail.
 
 The whole UI paints from CSS custom properties, so the palette is swappable at runtime:
 
@@ -50,8 +67,8 @@ The whole UI paints from CSS custom properties, so the palette is swappable at r
 | `--color-ink-50…900` | text scale, **inverted** (900 = brightest) |
 | `--color-brand-100…900` | lime accent ramp (100 = dim tint, 600 = the accent) |
 
-Every page has a **Background** control (top right) with dark presets (Olive, Forest, Graphite,
-Midnight) and two light ones, plus an exact-hex field. Light and dark are handled properly: picking a
+Every page has a **Background** control (top right) with dark presets (Royal, Charcoal, Graphite,
+Slate) and two light ones, plus an exact-hex field. Light and dark are handled properly: picking a
 light background flips the ink scale to dark text, picking a dark one flips it back. The choice is
 saved to `localStorage` and re-applied by a pre-paint script, so there is no flash on reload or
 navigation.

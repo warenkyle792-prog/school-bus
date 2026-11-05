@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#10150e",
+  themeColor: "#131316",
   width: "device-width",
   initialScale: 1,
 };
@@ -44,13 +44,16 @@ const themeBootScript = `
     s.setProperty('--color-brand-200', dark ? '#3a4d26' : '#d9f6ac');
 
     var steps = dark
-      ? ['0.045','0.085','0.14','0.22','0.34','0.47','0.6','0.74','0.88','0.96']
+      ? ['0.03','0.07','0.17','0.28','0.4','0.5','0.7','0.76','0.86','0.92']
       : ['','','','','','','','','',''];
     var lightInk = ['#f4f8f6','#eaf1ee','#d7e3dd','#b6c9c1','#8aa79b','#5d7d70','#3c5f52','#22453a','#172e26','#10201b'];
     var keys = ['50','100','200','300','400','500','600','700','800','900'];
     for (var i = 0; i < keys.length; i++) {
       s.setProperty('--color-ink-' + keys[i], dark ? mix(p.paper, '#ffffff', Number(steps[i])) : lightInk[i]);
     }
+
+    s.setProperty('--color-card-top', dark ? mix(p.paper2,'#ffffff',0.06) : p.paper2);
+    s.setProperty('--color-card-bottom', dark ? mix(p.paper2,'#000000',0.1) : p.paper2);
 
     document.documentElement.dataset.palette = p.id || 'custom';
     document.documentElement.dataset.scheme = dark ? 'dark' : 'light';

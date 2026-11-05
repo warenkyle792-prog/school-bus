@@ -17,10 +17,10 @@ export type Palette = {
 };
 
 export const PALETTES: Palette[] = [
-  { id: "olive", name: "Olive", paper: "#10150e", paper2: "#1a2017", line: "#2b3328", dark: true },
-  { id: "forest", name: "Forest", paper: "#0d1a15", paper2: "#14261e", line: "#22392e", dark: true },
-  { id: "graphite", name: "Graphite", paper: "#131313", paper2: "#1c1c1c", line: "#2e2e2e", dark: true },
-  { id: "midnight", name: "Midnight", paper: "#0e1420", paper2: "#161e2d", line: "#26303f", dark: true },
+  { id: "royal", name: "Royal", paper: "#1e2023", paper2: "#47484c", line: "#24262a", dark: true },
+  { id: "charcoal", name: "Charcoal", paper: "#2a2c30", paper2: "#55575b", line: "#323438", dark: true },
+  { id: "graphite", name: "Graphite", paper: "#131316", paper2: "#3c3e42", line: "#1e1f22", dark: true },
+  { id: "slate", name: "Slate", paper: "#22262c", paper2: "#4d535b", line: "#282d34", dark: true },
   { id: "paper", name: "Paper", paper: "#f7f5ef", paper2: "#fffefa", line: "#e3e0d6" },
   { id: "sand", name: "Sand", paper: "#f6ecdd", paper2: "#fffbf3", line: "#e7d9c2" },
 ];
@@ -86,18 +86,18 @@ export function applyPalette(p: Palette) {
   root.style.setProperty("--color-canvas", dark ? mix(p.paper, "#000000", 0.45) : mix(p.paper, "#000000", 0.06));
 
   if (dark) {
-    // surfaces get lighter as they come forward; text stays light
+    // Surfaces lighten as they come forward; text stays light. The steps are
+    // tuned so ink-600 still clears 4.5:1 on a mid-grey card.
     root.style.setProperty("--color-paper-3", mix(p.paper, "#ffffff", 0.11));
-    root.style.setProperty("--color-ink-50", mix(p.paper, "#ffffff", 0.045));
-    root.style.setProperty("--color-ink-100", mix(p.paper, "#ffffff", 0.085));
-    root.style.setProperty("--color-ink-200", mix(p.paper, "#ffffff", 0.14));
-    root.style.setProperty("--color-ink-300", mix(p.paper, "#ffffff", 0.22));
-    root.style.setProperty("--color-ink-400", mix(p.paper, "#ffffff", 0.34));
-    root.style.setProperty("--color-ink-500", mix(p.paper, "#ffffff", 0.47));
-    root.style.setProperty("--color-ink-600", mix(p.paper, "#ffffff", 0.6));
-    root.style.setProperty("--color-ink-700", mix(p.paper, "#ffffff", 0.74));
-    root.style.setProperty("--color-ink-800", mix(p.paper, "#ffffff", 0.88));
-    root.style.setProperty("--color-ink-900", mix(p.paper, "#ffffff", 0.96));
+    const steps: Array<[string, number]> = [
+      ["50", 0.03], ["100", 0.07], ["200", 0.17], ["300", 0.28], ["400", 0.4],
+      ["500", 0.5], ["600", 0.7], ["700", 0.76], ["800", 0.86], ["900", 0.92],
+    ];
+    for (const [key, amount] of steps) {
+      root.style.setProperty(`--color-ink-${key}`, mix(p.paper, "#ffffff", amount));
+    }
+    root.style.setProperty("--color-card-top", mix(p.paper2, "#ffffff", 0.06));
+    root.style.setProperty("--color-card-bottom", mix(p.paper2, "#000000", 0.1));
   } else {
     root.style.setProperty("--color-paper-3", mix(p.paper, "#ffffff", 0.5));
     root.style.setProperty("--color-ink-50", mix(p.paper, "#ffffff", 0.4));
@@ -143,7 +143,7 @@ export function ThemeBoot() {
 export default function ThemePicker({ className = "" }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState<Palette>(PALETTES[0]);
-  const [hex, setHex] = useState("#10150e");
+  const [hex, setHex] = useState("#1e2023");
 
   useEffect(() => {
     const saved = loadSavedPalette();
@@ -224,7 +224,7 @@ export default function ThemePicker({ className = "" }: { className?: string }) 
                   value={hex}
                   onChange={(e) => onHex(e.target.value)}
                   spellCheck={false}
-                  placeholder="#10150e"
+                  placeholder="#1e2023"
                   className="num w-full rounded-md border border-line bg-paper px-2 py-1.5 text-[11.5px] text-ink-800 outline-none focus:border-brand-400"
                 />
               </div>

@@ -4,7 +4,7 @@ import type { Bus, RunStatus } from "@/lib/types";
 import { cx, initials } from "@/lib/format";
 
 const STATUS: Record<RunStatus, { label: string; dot: string; bg: string; text: string }> = {
-  on_time: { label: "On time", dot: "bg-brand-600", bg: "bg-brand-100", text: "text-brand-700" },
+  on_time: { label: "On time", dot: "bg-brand-600", bg: "bg-brand-100", text: "text-brand-600" },
   delayed: { label: "Delayed", dot: "bg-sun-500", bg: "bg-sun-100", text: "text-sun-600" },
   breakdown: { label: "Breakdown", dot: "bg-berry-500", bg: "bg-berry-100", text: "text-berry-600" },
   finished: { label: "At school", dot: "bg-sky-500", bg: "bg-sky-100", text: "text-sky-600" },
@@ -83,7 +83,7 @@ export function RouteChip({
     >
       <span
         className="size-1.5 rounded-full"
-        style={{ background: active ? "#0c110b" : color, boxShadow: active ? "none" : `0 0 6px ${color}` }}
+        style={{ background: active ? "#131316" : color, boxShadow: active ? "none" : `0 0 6px ${color}` }}
       />
       {code}
       {name && <span className="font-normal opacity-60">{name}</span>}
@@ -188,7 +188,7 @@ export function Ring({
 
 export function LiveBadge({ label = "Live" }: { label?: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-600/25 bg-brand-100 px-2 py-0.5 text-[10.5px] font-semibold tracking-wide text-brand-700 uppercase">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-600/25 bg-brand-100 px-2 py-0.5 text-[10.5px] font-semibold tracking-wide text-brand-600 uppercase">
       <span className="relative inline-flex size-1.5">
         <span className="live-dot absolute inset-0 rounded-full text-brand-600" />
         <span className="relative size-1.5 rounded-full bg-brand-600" />

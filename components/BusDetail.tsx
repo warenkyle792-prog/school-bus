@@ -127,7 +127,7 @@ export default function BusDetail({
                             />
                           );
                         })}
-                        <circle cx={p.x} cy={p.y} r="7" fill={route.color} stroke="#10150e" strokeWidth="2.5" />
+                        <circle cx={p.x} cy={p.y} r="7" fill={route.color} stroke="#17181b" strokeWidth="2.5" />
                       </svg>
                     );
                   }}
@@ -325,7 +325,7 @@ function BoardTag({ status }: { status: "waiting" | "onboard" | "dropped" | "abs
 
 function CallButton() {
   return (
-    <button className="grid size-8 shrink-0 place-items-center rounded-full border border-line bg-paper-2 text-brand-700 transition hover:border-brand-300 hover:bg-brand-100">
+    <button className="grid size-8 shrink-0 place-items-center rounded-full border border-line bg-paper-2 text-brand-600 transition hover:border-brand-300 hover:bg-brand-100">
       <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.7">
         <path
           d="M4.2 2.5h1.9l1.1 2.6-1.4 1a7.3 7.3 0 0 0 3.7 3.7l1-1.4 2.6 1.1v1.9c0 .8-.7 1.5-1.5 1.4A11.2 11.2 0 0 1 2.8 4c-.1-.8.6-1.5 1.4-1.5Z"

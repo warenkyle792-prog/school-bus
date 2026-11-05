@@ -112,16 +112,16 @@ export default function ParentPage() {
                         <path d={d} fill="none" stroke={route.color} strokeWidth="4" strokeLinecap="round" strokeOpacity="0.85" />
                         <line x1={b.x} y1={b.y} x2={s.x} y2={s.y} stroke={route.color} strokeWidth="2" strokeDasharray="4 4" strokeOpacity="0.55" />
                         <g>
-                          <circle cx={s.x} cy={s.y} r="12" fill="#10150e" stroke={route.color} strokeWidth="2.5" />
+                          <circle cx={s.x} cy={s.y} r="12" fill="#17181b" stroke={route.color} strokeWidth="2.5" />
                           <text x={s.x} y={s.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill={route.color}>
                             {child.name[0]}
                           </text>
                         </g>
                         <g>
-                          <circle cx={school.x} cy={school.y} r="7" fill="#c9f27a" stroke="#10150e" strokeWidth="2" />
+                          <circle cx={school.x} cy={school.y} r="7" fill="#c9f27a" stroke="#17181b" strokeWidth="2" />
                         </g>
                         <circle cx={b.x} cy={b.y} r="15" fill={route.color} opacity="0.18" />
-                        <circle cx={b.x} cy={b.y} r="8.5" fill={route.color} stroke="#10150e" strokeWidth="2.5" />
+                        <circle cx={b.x} cy={b.y} r="8.5" fill={route.color} stroke="#17181b" strokeWidth="2.5" />
                       </svg>
                     );
                   }}
@@ -130,16 +130,16 @@ export default function ParentPage() {
 
               <div className="border-t border-line px-4 py-3.5">
                 {/* ETA ticket, mirroring the reference's "Arriving in 4m" panel */}
-                <div className="rounded-2xl border border-brand-600/25 bg-brand-100/60 px-3.5 py-3">
+                <div className="rounded-2xl border border-brand-600/25 bg-brand-100 px-3.5 py-3">
                   <div className="flex items-center justify-between">
                     <LiveBadge label="Live tracking" />
-                    <span className="num text-[10px] font-medium text-brand-700/80">
+                    <span className="num text-[10px] font-medium text-brand-600">
                       {route.code} · {bus.plate}
                     </span>
                   </div>
                   <div className="mt-2 flex items-end justify-between">
                   <div>
-                    <p className="text-[10px] font-bold tracking-wide text-brand-700/80 uppercase">
+                    <p className="text-[10px] font-bold tracking-wide text-brand-600 uppercase">
                       {!stopIsAhead
                         ? child.boardStatus === "onboard"
                           ? "Your child is on the bus"
@@ -148,14 +148,14 @@ export default function ParentPage() {
                           ? "Arrives at your stop"
                           : "Reaches your stop"}
                     </p>
-                    <p className="num text-[30px] leading-none font-semibold text-brand-700">
+                    <p className="num text-[30px] leading-none font-semibold text-brand-600">
                       {stopIsAhead ? etaMin : "--"}
                       <span className="ml-1 text-[13px] font-medium">{stopIsAhead ? "min" : ""}</span>
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-[10.5px] font-medium text-ink-600">{stop.name}</p>
-                    <p className="num text-[11px] font-semibold text-brand-700">
+                    <p className="num text-[11px] font-semibold text-brand-600">
                       {bus.delaySec > 120 ? `+${Math.round(bus.delaySec / 60)} min late` : "on schedule"}
                     </p>
                   </div>

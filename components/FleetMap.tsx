@@ -105,7 +105,7 @@ export default function FleetMap({
                   .join(" ");
                 return (
                   <g key={route.id} opacity={dim ? 0.18 : 1}>
-                    <path d={d} fill="none" stroke="#0b110a" strokeWidth={focusRouteId === route.id ? 9 : 7} strokeLinecap="round" strokeOpacity={0.75} />
+                    <path d={d} fill="none" stroke="#131417" strokeWidth={focusRouteId === route.id ? 9 : 7} strokeLinecap="round" strokeOpacity={0.75} />
                     <path
                       d={d}
                       fill="none"
@@ -127,7 +127,7 @@ export default function FleetMap({
                   const active = focusRouteId === route.id;
                   return (
                     <g key={stop.id} className="cursor-pointer" onClick={() => onFocusRoute(active ? null : route.id)}>
-                      <circle cx={x} cy={y} r={active ? 6 : 4.2} fill="#10150e" stroke={route.color} strokeWidth="2.2" />
+                      <circle cx={x} cy={y} r={active ? 6 : 4.2} fill="#17181b" stroke={route.color} strokeWidth="2.2" />
                       <circle cx={x} cy={y} r={active ? 2.6 : 1.8} fill={route.color} />
                       {active && (
                         <text x={x + 11} y={y + 3.5} fontSize="9.5" fontWeight="600" fill="#3c5f52">
@@ -143,7 +143,7 @@ export default function FleetMap({
               <g>
                 <circle cx={s.x} cy={s.y} r="26" fill="#c9f27a" opacity="0.12" />
                 <circle cx={s.x} cy={s.y} r="17" fill="#c9f27a" opacity="0.18" />
-                <circle cx={s.x} cy={s.y} r="11" fill="#10150e" stroke="#c9f27a" strokeWidth="2.4" />
+                <circle cx={s.x} cy={s.y} r="11" fill="#17181b" stroke="#c9f27a" strokeWidth="2.4" />
                 <path
                   d={`M${s.x - 4.6},${s.y + 0.4} L${s.x + 4.6},${s.y + 0.4} M${s.x},${s.y - 4.6} L${s.x},${s.y + 4.6}`}
                   stroke="#c9f27a"
