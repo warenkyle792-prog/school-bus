@@ -23,7 +23,6 @@ type RegisteredBus = {
   driverId: string | null;
   attendantName: string;
   trackerId: string;
-  note: string;
   status: "active" | "maintenance";
   createdAt: string;
   createdBy: string;
@@ -348,7 +347,6 @@ function BusForm({
     driverId: "",
     attendantName: "",
     trackerId: "",
-    note: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);

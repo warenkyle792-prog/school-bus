@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
 import type { Snapshot as LiveSnapshot } from "@/lib/types";
 import { Avatar } from "@/components/ui";
-import ThemePicker, { ThemeBoot } from "@/components/ThemePicker";
 import CommsBox from "@/components/CommsBox";
 import RouteMap from "@/components/RouteMap";
 import { LoadingState, StaleBanner } from "@/components/LoadState";
@@ -24,6 +23,7 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
   const [sos, setSos] = useState(false);
   const [sent, setSent] = useState<CommMessage[]>([]);
   const [broadcast, setBroadcast] = useState<string | null>(null);
+  const [reported, setReported] = useState<string | null>(null);
 
   const bus = snapshot?.buses.find((b) => b.driverId === DEMO_DRIVER_ID) ?? null;
   const route = useMemo(
@@ -393,21 +393,40 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
                 {["Breakdown", "Heavy traffic", "Student absent", "Route change", "Accident", "Other"].map((r) => (
                   <button
                     key={r}
-                    className="rounded-xl border border-line bg-paper-2 px-3 py-2.5 text-left text-[12px] font-semibold text-ink-700 transition hover:border-ink-300"
+                    onClick={() => setReported(r)}
+                    className={cx(
+                      "rounded-xl border px-3 py-2.5 text-left text-[12px] font-semibold transition",
+                      reported === r
+                        ? "border-brand-600/40 bg-brand-100 text-brand-600"
+                        : "border-line bg-paper-2 text-ink-700 hover:border-ink-300"
+                    )}
                   >
                     {r}
                   </button>
                 ))}
+                {reported && (
+                  <p className="col-span-2 text-[11px] text-ink-500">
+                    Reported to the transport desk · {reported}
+                  </p>
+                )}
               </div>
 </div>
 
             <div className="card p-4">
               <p className="label">Emergency</p>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                <button className="rounded-xl bg-berry-500 py-3 text-[12.5px] font-bold text-canvas">Panic button</button>
-                <button className="rounded-xl border border-line bg-paper-2 py-3 text-[12.5px] font-bold text-ink-700">
-                  Call desk
+                <button
+                  onClick={() => setSos(true)}
+                  className="rounded-xl bg-berry-500 py-3 text-[12.5px] font-bold text-canvas"
+                >
+                  Panic button
                 </button>
+                <a
+                  href="tel:+254700000000"
+                  className="grid place-items-center rounded-xl border border-line bg-paper-2 py-3 text-[12.5px] font-bold text-ink-700"
+                >
+                  Call desk
+                </a>
               </div>
             </div>
           </div>
@@ -466,12 +485,10 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh justify-center bg-canvas p-0 sm:p-8">
-      <ThemeBoot />
       <div className="relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-paper sm:h-[860px] sm:max-h-[calc(100dvh-4rem)] sm:rounded-[2rem] sm:border sm:border-line sm:shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)]">
         <header className="flex shrink-0 items-center justify-between border-b border-line px-4 py-2.5">
           <p className="text-[11px] font-semibold tracking-wider text-ink-400 uppercase">Safiri driver</p>
           <div className="flex items-center gap-2">
-            <ThemePicker />
             <Link href="/console" className="text-[11px] font-medium text-ink-500 underline decoration-line underline-offset-2">
               Console
             </Link>

@@ -9,7 +9,7 @@ import {
   SCRIPTED_ALERTS,
   STUDENTS,
 } from "./data";
-import { bearing, haversineKm, projectOntoPath } from "./geo";
+import { bearing, projectOntoPath } from "./geo";
 import type { Alert, Bus, Driver, Route, Snapshot, Stop, TripEvent } from "./types";
 import type { RegisteredBus, RegisteredDriver } from "./store";
 
@@ -24,7 +24,8 @@ const EAT_OFFSET_MS = 3 * 60 * 60 * 1000;
 
 
 /** Breakdown window, expressed as a fraction of a bus's round trip. */
-const BREAKDOWN = { busId: "b-04", from: 0.1, to: 0.26, atProgress: 0.46 };
+/** One scripted breakdown a morning, so the console has a real incident to show. */
+const BREAKDOWN = { busId: "b-04", atProgress: 0.46 };
 
 const stopFractions = new Map<string, number[]>();
 function stopFractionsFor(route: Route): number[] {
@@ -60,18 +61,6 @@ export function progressFor(route: Route, elapsedSec: number): number {
     }
   }
   return 0;
-}
-
-/** Inverse of progressFor: elapsed seconds that produce a given progress. */
-export function elapsedForProgress(route: Route, progress: number): number {
-  let lo = 0;
-  let hi = route.durationSec;
-  for (let i = 0; i < 22; i++) {
-    const mid = (lo + hi) / 2;
-    if (progressFor(route, mid) < progress) lo = mid;
-    else hi = mid;
-  }
-  return (lo + hi) / 2;
 }
 
 function noise(seed: number): number {
@@ -589,8 +578,4 @@ function buildAlerts(buses: Bus[], simSec: number, events: TripEvent[]): Alert[]
 }
 
 /** Straight-line distance from a bus to the school gate, in km. */
-export function distanceToSchoolKm(bus: Bus): number {
-  return Math.round(haversineKm(bus.position, SCHOOL.coord) * 10) / 10;
-}
-
 export { projectOntoPath };

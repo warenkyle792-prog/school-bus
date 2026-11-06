@@ -103,8 +103,6 @@ light background flips the ink scale to dark text, picking a dark one flips it b
 saved to `localStorage` and re-applied by a pre-paint script, so there is no flash on reload or
 navigation.
 
-To change the default look, edit the `@theme` block in `app/globals.css`. To add a preset, add it to
-`PALETTES` in `components/ThemePicker.tsx` — and mirror the token math in the boot script inside
 `app/layout.tsx`.
 
 ## Parent scoping, ETAs, reminders and comms
@@ -125,7 +123,6 @@ reminder is recalculated from the live snapshot on every poll, so it self-correc
 changes rather than needing to be re-set.
 
 ```
-GET /api/notifications?children=st-013,st-021&lead=10
 → { reminders: [{ state, etaSec, firesInSec, message }], messages: [...] }
 ```
 

@@ -7,7 +7,6 @@ import BusDetail from "@/components/BusDetail";
 import FleetManager from "@/components/FleetManager";
 import { LoadingState, StaleBanner } from "@/components/LoadState";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
-import { ThemeBoot } from "@/components/ThemePicker";
 import { Avatar, LiveBadge, OccupancyBar, RouteChip, StatusPill } from "@/components/ui";
 import { cx, fmtDuration, relTime, signedMin } from "@/lib/format";
 import type { Bus, Snapshot } from "@/lib/types";
@@ -22,7 +21,6 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
   if (!snapshot) {
     return (
       <>
-        <ThemeBoot />
         <div className="flex h-dvh flex-col bg-paper">
           <AppBar clock="--:--" />
           <LoadingState
@@ -40,7 +38,6 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
 
   return (
     <div className="relative flex h-dvh flex-col bg-paper">
-      <ThemeBoot />
       <AppBar
         clock={snapshot.clockLabel}
         right={

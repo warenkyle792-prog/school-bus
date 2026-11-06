@@ -1,5 +1,4 @@
 import Link from "next/link";
-import ThemePicker, { ThemeBoot } from "@/components/ThemePicker";
 import { LiveBadge } from "@/components/ui";
 
 /**
@@ -45,7 +44,6 @@ const ROLES = [
 export default function Home() {
   return (
     <main className="min-h-dvh bg-canvas">
-      <ThemeBoot />
       <div className="mx-auto max-w-3xl px-5 py-10 sm:py-16">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -63,7 +61,6 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <ThemePicker />
             <LiveBadge />
           </div>
         </div>

@@ -56,11 +56,3 @@ export function etaMinutes(etaSec: number | null): number | null {
   if (etaSec === null) return null;
   return Math.max(1, Math.round(etaSec / 60));
 }
-
-/** Human sentence used in the notification previews. */
-export function etaSentence(etaSec: number | null): string {
-  const m = etaMinutes(etaSec);
-  if (m === null) return "already passed";
-  if (m === 1) return "about 1 minute";
-  return `about ${m} minutes`;
-}

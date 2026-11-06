@@ -4,7 +4,6 @@ const R = 6371; // km
 
 export const toRad = (d: number) => (d * Math.PI) / 180;
 export const toDeg = (r: number) => (r * 180) / Math.PI;
-
 export function haversineKm(a: LatLng, b: LatLng): number {
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
@@ -67,32 +66,6 @@ export function pathLengthKm(path: LatLng[]): number {
 }
 
 /** Point at a given fraction (0..1) of total path length. */
-export function pointAlong(path: LatLng[], t: number): LatLng {
-  if (path.length === 0) return { lat: 0, lng: 0 };
-  if (path.length === 1) return path[0];
-  const clamped = Math.max(0, Math.min(1, t));
-  let total = 0;
-  const legs: number[] = [];
-  for (let i = 1; i < path.length; i++) {
-    const d = haversineKm(path[i - 1], path[i]);
-    legs.push(d);
-    total += d;
-  }
-  let target = clamped * total;
-  for (let i = 0; i < legs.length; i++) {
-    if (target <= legs[i] || i === legs.length - 1) {
-      const f = legs[i] === 0 ? 0 : target / legs[i];
-      return {
-        lat: path[i].lat + (path[i + 1].lat - path[i].lat) * f,
-        lng: path[i].lng + (path[i + 1].lng - path[i].lng) * f,
-      };
-    }
-    target -= legs[i];
-  }
-  return path[path.length - 1];
-}
-
-/** Nearest point on a path + its arc-length fraction. */
 export function projectOntoPath(path: LatLng[], p: LatLng): { point: LatLng; t: number } {
   let best = { point: path[0], t: 0, d: Number.POSITIVE_INFINITY };
   let total = 0;
@@ -117,14 +90,3 @@ export function projectOntoPath(path: LatLng[], p: LatLng): { point: LatLng; t: 
   }
   return { point: best.point, t: total === 0 ? 0 : best.t };
 }
-
-export const fmtClock = (d: Date) =>
-  d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
-
-export const fmtMin = (min: number) => {
-  const m = Math.max(0, Math.round(min));
-  if (m === 0) return "now";
-  return `${m} min`;
-};
-
-export const pad = (n: number) => String(n).padStart(2, "0");

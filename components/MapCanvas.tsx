@@ -13,9 +13,6 @@ type Props = {
   children?: ReactNode | ((p: Projector) => ReactNode);
   className?: string;
   labels?: boolean;
-  minHeight?: number;
-  /** Rounded inner frame, like the reference's map panels */
-  inset?: boolean;
 };
 
 export type Projector = (p: LatLng) => { x: number; y: number };
@@ -36,7 +33,6 @@ export default function MapCanvas({
   children,
   className = "",
   labels = true,
-  minHeight = 0,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 960, h: 640 });
@@ -67,7 +63,6 @@ export default function MapCanvas({
     <div
       ref={ref}
       className={`relative isolate overflow-hidden bg-canvas ${className}`}
-      style={{ minHeight }}
     >
       {/* photographic aerial ground */}
       <div
