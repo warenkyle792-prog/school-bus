@@ -184,7 +184,7 @@ app/
   driver/               driver app
   api/snapshot/route.ts single JSON endpoint the whole UI reads
 components/
-  MapCanvas.tsx         hand-drawn vector basemap of Nairobi (no tiles, no API key)
+  MapCanvas.tsx         photographic aerial basemap of Nairobi (no tiles, no API key)
   FleetMap.tsx          live buses with smoothed interpolation
   BusDetail.tsx         trip sheet drawer
   ui.tsx                pills, avatars, rings, sparklines

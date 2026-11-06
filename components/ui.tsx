@@ -79,7 +79,7 @@ export function RouteChip({
         "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11.5px] font-semibold transition",
         active
           ? "border-brand-600/40 bg-brand-600 text-canvas"
-          : "border-line bg-paper-2/80 text-ink-700 backdrop-blur hover:border-ink-300 hover:text-ink-900"
+          : "border-white/12 bg-paper/60 text-ink-700 backdrop-blur-md hover:border-white/25 hover:text-ink-900"
       )}
     >
       <span

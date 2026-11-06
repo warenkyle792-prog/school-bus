@@ -113,10 +113,10 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
                   setFocusRouteId(bus.routeId);
                 }}
                 className={cx(
-                  "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-semibold backdrop-blur transition",
+                  "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-semibold backdrop-blur-md transition",
                   active
                     ? "border-transparent bg-brand-600 text-canvas"
-                    : "border-line/80 bg-paper-2/90 text-ink-700 hover:border-ink-300"
+                    : "border-white/12 bg-paper/60 text-ink-700 hover:border-white/25"
                 )}
               >
                 <span
@@ -141,7 +141,7 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
         )}
 
         {/* map overlay: legend, bottom-right so it clears the rail */}
-        <div className="pointer-events-none absolute right-3 bottom-3 z-20 hidden items-center gap-3 rounded-full border border-line/80 bg-paper-2/90 px-3 py-1.5 backdrop-blur sm:flex lg:right-4 lg:bottom-16">
+        <div className="pointer-events-none absolute right-3 bottom-3 z-20 hidden items-center gap-3 rounded-full border border-white/12 bg-paper/60 px-3 py-1.5 backdrop-blur-md sm:flex lg:right-4 lg:bottom-16">
           <span className="flex items-center gap-1.5 text-[10.5px] font-medium text-ink-600">
             <span className="size-1.5 rounded-full bg-brand-500" /> Moving
           </span>
@@ -166,7 +166,7 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
         )}
 
         {/* ── Fleet rail: floating glass column over the map ────────── */}
-        <aside className="absolute top-0 bottom-0 left-0 z-20 hidden w-[320px] flex-col border-r border-line/70 bg-paper/88 backdrop-blur-xl lg:flex">
+        <aside className="absolute top-0 bottom-0 left-0 z-20 hidden w-[320px] flex-col border-r border-white/10 bg-paper/55 backdrop-blur-2xl lg:flex">
           <div className="shrink-0 px-4 pt-4 pb-3">
             <div className="flex items-end justify-between">
               <div>
