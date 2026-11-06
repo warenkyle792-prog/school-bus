@@ -34,14 +34,16 @@ type Registry = { buses: RegisteredBus[]; drivers: RegisteredDriver[] };
 type Props = {
   snapshot: Snapshot;
   onShowOnMap: (busId: string) => void;
+  /** Opens the panel straight into a form or the roster. */
+  initialMode?: "list" | "bus" | "driver";
 };
 
 const PLATE_HINT = "KDL 412X";
 
-export default function FleetManager({ snapshot, onShowOnMap }: Props) {
+export default function FleetManager({ snapshot, onShowOnMap, initialMode = "list" }: Props) {
   const [registry, setRegistry] = useState<Registry>({ buses: [], drivers: [] });
   const [loaded, setLoaded] = useState(false);
-  const [mode, setMode] = useState<"list" | "bus" | "driver">("list");
+  const [mode, setMode] = useState<"list" | "bus" | "driver">(initialMode);
 
   const refresh = async () => {
     const res = await fetch("/api/fleet", { cache: "no-store" });
@@ -62,6 +64,44 @@ export default function FleetManager({ snapshot, onShowOnMap }: Props) {
     for (const b of registry.buses) if (b.driverId) map.set(b.driverId, b.plate);
     return map;
   }, [registry.buses]);
+
+  /**
+   * Every driver the school has, not just the ones it typed in.
+   *
+   * `snapshot.drivers` is the roster the whole system believes in — the seeded
+   * crew driving the buses plus everyone registered here. Listing only the
+   * registry hid the five drivers actually operating the fleet.
+   */
+  const allDrivers = useMemo(() => {
+    const registryById = new Map(registry.drivers.map((d) => [d.id, d]));
+    return snapshot.drivers.map((d) => ({
+      driver: {
+        id: d.id,
+        name: d.name,
+        phone: d.phone,
+        licence: registryById.get(d.id)?.licence ?? d.licence,
+        yearsExp: registryById.get(d.id)?.yearsExp ?? d.yearsExp,
+      },
+    }));
+  }, [snapshot.drivers, registry.drivers]);
+
+  const driversOnDuty = useMemo(
+    () =>
+      allDrivers
+        .map((row) => {
+          const bus = registry.buses.find((b) => b.driverId === row.driver.id) ??
+            snapshot.buses.find((b) => b.driverId === row.driver.id);
+          return {
+            ...row,
+            bus: bus ? { id: bus.id, plate: bus.plate } : null,
+            route: bus ? snapshot.routes.find((r) => r.id === bus.routeId) : undefined,
+          };
+        })
+        .sort((a, b) => (a.bus ? 0 : 1) - (b.bus ? 0 : 1)),
+    [allDrivers, registry.buses, snapshot.buses, snapshot.routes]
+  );
+  const onDuty = driversOnDuty.filter((r) => r.bus);
+  const availableDrivers = driversOnDuty.filter((r) => !r.bus);
 
   return (
     <div className="space-y-2.5">
@@ -118,6 +158,7 @@ export default function FleetManager({ snapshot, onShowOnMap }: Props) {
 
       {mode === "driver" && (
         <DriverForm
+          buses={unassigned.map((b) => ({ id: b.id, plate: b.plate }))}
           onDone={async () => {
             await refresh();
             setMode("list");
@@ -229,27 +270,56 @@ export default function FleetManager({ snapshot, onShowOnMap }: Props) {
           );
         })}
 
-      {mode === "list" && registry.drivers.length > 0 && (
+      {mode === "list" && (
         <div className="card p-3">
-          <p className="label">Drivers on file · {registry.drivers.length}</p>
+          <div className="flex items-center justify-between">
+            <p className="label">Drivers</p>
+            <span className="num text-[10px] text-ink-500">
+              {onDuty.length} on duty · {availableDrivers.length} free
+            </span>
+          </div>
           <div className="mt-2 space-y-1.5">
-            {registry.drivers.map((d) => (
-              <div key={d.id} className="flex items-center gap-2">
-                <Avatar name={d.name} hue={40} size={22} />
+            {onDuty.map((row) => (
+              <div key={row.driver.id} className="flex items-center gap-2">
+                <Avatar name={row.driver.name} hue={30} size={22} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11px] font-medium text-ink-800">{d.name}</p>
-                  <p className="num truncate text-[9.5px] text-ink-500">{d.phone}</p>
+                  <p className="truncate text-[11px] font-medium text-ink-800">{row.driver.name}</p>
+                  <p className="num truncate text-[9.5px] text-ink-500">
+                    {row.driver.phone}
+                    {row.bus ? ` · ${row.route?.code ?? ""}` : ""}
+                  </p>
                 </div>
-                <span
-                  className={cx(
-                    "shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold",
-                    driverBusy.has(d.id) ? "bg-brand-100 text-brand-600" : "bg-ink-100 text-ink-500"
-                  )}
-                >
-                  {driverBusy.get(d.id) ?? "available"}
-                </span>
+                {row.bus ? (
+                  <button
+                    onClick={() => onShowOnMap(row.bus!.id)}
+                    className="num shrink-0 rounded-full bg-brand-100 px-2 py-0.5 text-[9.5px] font-bold text-brand-600"
+                  >
+                    {row.bus.plate}
+                  </button>
+                ) : (
+                  <span className="shrink-0 rounded-full bg-ink-100 px-2 py-0.5 text-[9.5px] font-semibold text-ink-500">
+                    no bus
+                  </span>
+                )}
               </div>
             ))}
+            {availableDrivers.length > 0 && (
+              <>
+                <p className="pt-1 text-[9px] font-semibold tracking-wide text-ink-400 uppercase">Available</p>
+                {availableDrivers.map((row) => (
+                  <div key={row.driver.id} className="flex items-center gap-2">
+                    <Avatar name={row.driver.name} hue={200} size={22} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[11px] font-medium text-ink-800">{row.driver.name}</p>
+                      <p className="num truncate text-[9.5px] text-ink-500">{row.driver.phone}</p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-ink-100 px-2 py-0.5 text-[9.5px] font-semibold text-ink-500">
+                      available
+                    </span>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
       )}
@@ -397,8 +467,16 @@ function BusForm({
 
 /* ── Add driver ───────────────────────────────────────────────────────── */
 
-function DriverForm({ onDone, onCancel }: { onDone: () => Promise<void> | void; onCancel: () => void }) {
-  const [form, setForm] = useState({ name: "", phone: "", licence: "", yearsExp: "5" });
+function DriverForm({
+  buses,
+  onDone,
+  onCancel,
+}: {
+  buses: { id: string; plate: string }[];
+  onDone: () => Promise<void> | void;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState({ name: "", phone: "", licence: "", yearsExp: "5", busId: "" });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -411,7 +489,14 @@ function DriverForm({ onDone, onCancel }: { onDone: () => Promise<void> | void; 
       const res = await fetch("/api/fleet", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ kind: "driver", ...form, yearsExp: Number(form.yearsExp) }),
+        body: JSON.stringify({
+          kind: "driver",
+          name: form.name,
+          phone: form.phone,
+          licence: form.licence,
+          yearsExp: Number(form.yearsExp),
+          ...(form.busId ? { busId: form.busId } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Could not register the driver.");
@@ -446,6 +531,21 @@ function DriverForm({ onDone, onCancel }: { onDone: () => Promise<void> | void; 
             <input type="number" min={0} max={50} value={form.yearsExp} onChange={(e) => set("yearsExp", e.target.value)} className={inputCls} />
           </Field>
         </div>
+        <Field label="Put on bus" hint={buses.length === 0 ? "Register a bus first" : "optional"}>
+          <select
+            value={form.busId}
+            onChange={(e) => set("busId", e.target.value)}
+            className={inputCls}
+            disabled={buses.length === 0}
+          >
+            <option value="">Leave unassigned</option>
+            {buses.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.plate}
+              </option>
+            ))}
+          </select>
+        </Field>
       </div>
       {error && <p className="mt-2 rounded-md bg-berry-100 px-2 py-1.5 text-[10.5px] text-berry-600">{error}</p>}
       <button

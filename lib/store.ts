@@ -3,7 +3,7 @@
  *
  * In production this is a Postgres table (with RLS scoped per school). Here it
  * is a JSON file on disk so registrations survive a server restart, plus an
- * in-memory cache so the hot snapshot path never touches the filesystem.
+ * shared cache so the hot snapshot path never re-parses the file.
  *
  * Writes are serialised through a promise chain: two tabs submitting at once
  * can't interleave a read-modify-write.
@@ -50,19 +50,35 @@ const DATA_FILE = path.join(DATA_DIR, "fleet.json");
 
 const empty: Registry = { version: 1, buses: [], drivers: [] };
 
-let cache: Registry | null = null;
+/**
+ * The cache lives on globalThis, not in module scope.
+ *
+ * Next bundles server code per route, so `/api/fleet` and `/console` each get
+ * their own copy of this module. A module-level cache meant the console cached
+ * an empty registry at boot and never saw a bus registered through the API —
+ * the bus persisted to disk and appeared in the API, but not on the screen.
+ * Sharing one cache (and revalidating it against the file's mtime) fixes that.
+ */
+type CachedRegistry = { mtimeMs: number; data: Registry };
+type GlobalWithStore = typeof globalThis & { __safiri_registry__?: CachedRegistry | null };
+
+const g = globalThis as GlobalWithStore;
 let writeChain: Promise<unknown> = Promise.resolve();
 
 async function readRegistry(): Promise<Registry> {
-  if (cache) return cache;
   try {
+    const stat = await fs.stat(DATA_FILE);
+    const cached = g.__safiri_registry__;
+    // Another route bundle may have written since we last looked; the file's
+    // mtime is the cheap, authoritative signal.
+    if (cached && cached.mtimeMs === stat.mtimeMs) return cached.data;
+
     const raw = await fs.readFile(DATA_FILE, "utf8");
     const parsed = JSON.parse(raw) as Registry;
-    if (!Array.isArray(parsed.buses) || !Array.isArray(parsed.drivers)) {
-      cache = empty;
-    } else {
-      cache = parsed;
-    }
+    const data =
+      Array.isArray(parsed.buses) && Array.isArray(parsed.drivers) ? parsed : empty;
+    g.__safiri_registry__ = { mtimeMs: stat.mtimeMs, data };
+    return data;
   } catch (err) {
     const code = (err as NodeJS.ErrnoException)?.code;
     if (code !== "ENOENT") {
@@ -70,13 +86,12 @@ async function readRegistry(): Promise<Registry> {
       // let the next write heal it.
       console.warn(`[store] could not read ${DATA_FILE}:`, code ?? err);
     }
-    cache = empty;
+    g.__safiri_registry__ = null;
+    return empty;
   }
-  return cache;
 }
 
 async function persist(next: Registry): Promise<void> {
-  cache = next;
   const run = async () => {
     await fs.mkdir(DATA_DIR, { recursive: true });
     // Write to a temp file then rename: a crash mid-write can't truncate the
@@ -84,6 +99,8 @@ async function persist(next: Registry): Promise<void> {
     const tmp = `${DATA_FILE}.${process.pid}.tmp`;
     await fs.writeFile(tmp, JSON.stringify(next, null, 2), "utf8");
     await fs.rename(tmp, DATA_FILE);
+    const stat = await fs.stat(DATA_FILE);
+    g.__safiri_registry__ = { mtimeMs: stat.mtimeMs, data: next };
   };
   writeChain = writeChain.then(run, run);
   await writeChain;
@@ -137,6 +154,14 @@ export async function registerDriver(input: CreateDriverInput) {
   return driver;
 }
 
+/** Registers a driver and immediately puts them on a bus, so "add a driver"
+ *  never leaves the school with a roster entry they then can't dispatch. */
+export async function registerDriverForBus(busId: string, input: CreateDriverInput) {
+  const driver = await registerDriver(input);
+  const bus = await assignDriver(busId, driver.id);
+  return { driver, bus };
+}
+
 export async function assignDriver(busId: string, driverId: string | null) {
   const current = await readRegistry();
   const target = current.buses.find((b) => b.id === busId);
@@ -170,5 +195,5 @@ export async function removeBus(busId: string) {
 
 /** Test helper — drops the in-memory cache so the next read hits disk. */
 export function __resetCache() {
-  cache = null;
+  g.__safiri_registry__ = null;
 }

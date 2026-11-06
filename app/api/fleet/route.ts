@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listRegistry, registerBus, registerDriver } from "@/lib/store";
+import { listRegistry, registerBus, registerDriver, registerDriverForBus } from "@/lib/store";
 import { ROUTES } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
@@ -61,12 +61,20 @@ export async function POST(request: Request) {
       if (!/^\+?[\d\s()-]{9,18}$/.test(phone)) return bad("Enter a valid phone number.");
       if (licence.length < 4) return bad("Enter the driving licence number.");
 
-      const driver = await registerDriver({
+      const input = {
         name,
         phone,
         licence,
         yearsExp: Math.max(0, Math.min(50, Number(body.yearsExp) || 0)),
-      });
+      };
+
+      // Optional: create the driver straight onto a bus.
+      if (body.busId) {
+        const result = await registerDriverForBus(String(body.busId), input);
+        return NextResponse.json(result, { status: 201 });
+      }
+
+      const driver = await registerDriver(input);
       return NextResponse.json({ driver }, { status: 201 });
     }
 

@@ -17,7 +17,7 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
   const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
   const [focusRouteId, setFocusRouteId] = useState<string | null>(null);
   const [detailBusId, setDetailBusId] = useState<string | null>(null);
-  const [registerOpen, setRegisterOpen] = useState(false);
+  const [panel, setPanel] = useState<"buses" | "drivers" | null>(null);
 
   if (!snapshot) {
     return (
@@ -46,7 +46,13 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
         right={
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setRegisterOpen(true)}
+              onClick={() => setPanel("drivers")}
+              className="rounded-full border border-line bg-paper-2 px-3 py-1.5 text-[12px] font-semibold text-ink-800 transition hover:border-ink-300"
+            >
+              Drivers
+            </button>
+            <button
+              onClick={() => setPanel("buses")}
               className="rounded-full bg-brand-600 px-3 py-1.5 text-[12px] font-bold text-canvas transition hover:bg-brand-700"
             >
               Add bus
@@ -88,6 +94,46 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
           </div>
         </div>
 
+        {/* map overlay: every tracked vehicle, including newly registered ones */}
+        <div className="no-scrollbar pointer-events-auto absolute inset-x-3 bottom-3 z-20 flex gap-1.5 overflow-x-auto lg:left-[340px] lg:right-3">
+          {snapshot.buses.map((bus) => {
+            const route = snapshot.routes.find((r) => r.id === bus.routeId);
+            const active = selectedBusId === bus.id;
+            const dot =
+              bus.status === "breakdown"
+                ? "#ec4d68"
+                : bus.status === "offline"
+                  ? "#8b8f96"
+                  : (route?.color ?? "#8b8f96");
+            return (
+              <button
+                key={bus.id}
+                onClick={() => {
+                  setSelectedBusId(active ? null : bus.id);
+                  setFocusRouteId(bus.routeId);
+                }}
+                className={cx(
+                  "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-semibold backdrop-blur transition",
+                  active
+                    ? "border-transparent bg-brand-600 text-canvas"
+                    : "border-line/80 bg-paper-2/90 text-ink-700 hover:border-ink-300"
+                )}
+              >
+                <span
+                  className="size-1.5 rounded-full"
+                  style={{ background: active ? "#131316" : dot }}
+                />
+                {bus.plate}
+                {bus.registered && (
+                  <span className={cx("text-[8.5px] font-bold uppercase", active ? "text-canvas/70" : "text-brand-600")}>
+                    new
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
         {stale && (
           <div className="absolute inset-x-3 top-14 z-30 lg:left-[340px] lg:right-3 lg:top-16">
             <StaleBanner lastOkMs={lastOkMs} onRetry={retry} />
@@ -95,7 +141,7 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
         )}
 
         {/* map overlay: legend, bottom-right so it clears the rail */}
-        <div className="pointer-events-none absolute right-3 bottom-3 z-20 hidden items-center gap-3 rounded-full border border-line/80 bg-paper-2/90 px-3 py-1.5 backdrop-blur sm:flex lg:right-4 lg:bottom-4">
+        <div className="pointer-events-none absolute right-3 bottom-3 z-20 hidden items-center gap-3 rounded-full border border-line/80 bg-paper-2/90 px-3 py-1.5 backdrop-blur sm:flex lg:right-4 lg:bottom-16">
           <span className="flex items-center gap-1.5 text-[10.5px] font-medium text-ink-600">
             <span className="size-1.5 rounded-full bg-brand-500" /> Moving
           </span>
@@ -109,7 +155,7 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
         </div>
 
         {selected && (
-          <div className="absolute right-3 bottom-3 left-3 z-20 sm:left-auto sm:w-[330px] lg:right-4 lg:bottom-16">
+          <div className="absolute right-3 bottom-3 left-3 z-20 sm:left-auto sm:w-[330px] lg:right-4 lg:bottom-28">
             <SelectedBusCard
               bus={selected}
               snapshot={snapshot}
@@ -185,13 +231,13 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
 
       </div>
 
-      {registerOpen && (
+      {panel && (
         <div className="absolute inset-0 z-40 flex items-end justify-center bg-canvas/70 p-0 backdrop-blur-sm sm:items-center sm:p-6">
           <div className="flex max-h-[88vh] w-full max-w-[460px] flex-col overflow-hidden rounded-t-[1.4rem] border border-line bg-paper sm:rounded-[1.4rem]">
             <div className="flex shrink-0 items-center justify-between border-b border-line px-4 py-3">
-              <p className="text-[13px] font-semibold">Fleet</p>
+              <p className="text-[13px] font-semibold">{panel === "buses" ? "Buses" : "Drivers"}</p>
               <button
-                onClick={() => setRegisterOpen(false)}
+                onClick={() => setPanel(null)}
                 className="rounded-full border border-line bg-paper-2 px-2.5 py-1 text-[11px] font-semibold text-ink-600"
               >
                 Close
@@ -200,8 +246,9 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
             <div className="min-h-0 flex-1 overflow-y-auto p-3">
               <FleetManager
                 snapshot={snapshot}
+                initialMode={panel === "buses" ? "bus" : "list"}
                 onShowOnMap={(busId) => {
-                  setRegisterOpen(false);
+                  setPanel(null);
                   setSelectedBusId(busId);
                   const b = snapshot.buses.find((x) => x.id === busId);
                   if (b) setFocusRouteId(b.routeId);

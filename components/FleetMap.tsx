@@ -177,16 +177,13 @@ export default function FleetMap({
                   onMouseLeave={() => setHover(null)}
                   className="group absolute -translate-x-1/2 -translate-y-1/2 transition-opacity duration-300"
                   style={{ left: x, top: y, opacity: dim ? 0.3 : 1, zIndex: selected ? 30 : 20 }}
-                  aria-label={`${route.code} ${route.name}`}
+                  aria-label={`${bus.plate} on ${route.code}${bus.registered ? ", registered" : ""}`}
                 >
                   {critical && (
                     <span className="absolute inset-0 -m-2 animate-ping rounded-full bg-berry-500/40" />
                   )}
                   {bus.registered && !offline && (
-                    <span
-                      className="absolute inset-0 -m-1 rounded-full border"
-                      style={{ borderColor: route.color, opacity: 0.45 }}
-                    />
+                    <span className="absolute -inset-1 rounded-full border-2 border-dashed border-ink-200/70" />
                   )}
                   <span
                     className={`relative grid size-8 place-items-center rounded-full border-2 border-canvas text-canvas shadow-lg transition-transform duration-200 group-hover:scale-110 ${
@@ -207,11 +204,17 @@ export default function FleetMap({
 
                   {(hover === bus.id || selected) && (
                     <div className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2.5 w-max -translate-x-1/2 rounded-lg border border-line bg-paper-3 px-2.5 py-1.5 text-left shadow-xl">
-                      <p className="text-[11px] font-semibold text-ink-900">{route.code} · {bus.plate}</p>
+                      <p className="text-[11px] font-semibold text-ink-900">
+                        {bus.plate}
+                        <span className="ml-1 font-medium text-ink-500">· {route.code}</span>
+                      </p>
                       <p className="num text-[10px] text-ink-500">
                         {offline
                           ? "no GPS fix"
                           : `${bus.speedKph} kph · ${bus.onBoard}/${bus.capacity} on board`}
+                      </p>
+                      <p className="text-[10px] text-ink-500">
+                        {bus.registered ? "registered this term" : "school fleet"}
                       </p>
                     </div>
                   )}

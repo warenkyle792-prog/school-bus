@@ -326,12 +326,26 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
     };
   });
 
+  // How many vehicles already sit on each route, so the Nth one can be nudged
+  // aside instead of landing on top of the first.
+  const perRoute = new Map<string, number>();
+  for (const b of buses) perRoute.set(b.routeId, (perRoute.get(b.routeId) ?? 0) + 1);
+
   for (const reg of opts.registeredBuses ?? []) {
     const route = ROUTES.find((r) => r.id === reg.routeId);
     if (!route) continue;
     const run = busRun(route, clockSec);
-    const coord = pointAt(route, run.progress);
-    const idx = Math.round(run.progress * (route.path.length - 1));
+    // A second bus on the same route must not render on top of the first, or
+    // the manager registers a vehicle and never sees it. Each registered bus is
+    // nudged back along its own path by a stable, per-vehicle amount.
+    const ordinal = perRoute.get(reg.routeId) ?? 1;
+    perRoute.set(reg.routeId, ordinal + 1);
+    const ownProgress = run.progress;
+    // ~55 m sideways per extra vehicle on the route, stable per bus.
+    const side = (ordinal % 2 === 0 ? 1 : -1) * 0.0005 * Math.ceil(ordinal / 2);
+    const base = pointAt(route, ownProgress);
+    const coord = { lat: base.lat + side, lng: base.lng + side * 0.8 };
+    const idx = Math.round(ownProgress * (route.path.length - 1));
     const jitter = noise(hash(reg.id) * 1000 + Math.floor(simSec / 15));
     const offline = isOffline(reg);
 
@@ -368,7 +382,7 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
       fuelPct: Math.round(40 + hash(reg.id + "f") * 55),
       odometerKm: Math.round(1200 + hash(reg.id + "o") * 9000),
       nextStopId: nextStop.id,
-      progress: offline ? 0 : run.progress,
+      progress: offline ? 0 : ownProgress,
       direction: run.direction,
       parkState: offline ? "stopped" : run.parked,
       etaSec: Math.max(0, run.direction === "morning" ? route.durationSec - run.elapsedSec : run.elapsedSec),
