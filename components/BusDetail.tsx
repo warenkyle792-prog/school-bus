@@ -420,10 +420,6 @@ function NotifyPanel({
           {result}
         </p>
       )}
-      <p className="mt-1.5 text-[9.5px] leading-relaxed text-ink-500">
-        Appears in the parent app immediately for every guardian on {route.code}. SMS delivery plugs in
-        at /api/broadcasts when a provider is configured.
-      </p>
     </div>
   );
 }

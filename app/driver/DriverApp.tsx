@@ -34,7 +34,6 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
       <Shell>
         <LoadingState
           title="Loading your run sheet"
-          detail="Syncing with the transport desk"
           error={error}
           onRetry={retry}
         />
@@ -239,19 +238,13 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
                 );
               })}
             </div>
-            <p className="mt-3 px-1 text-[10.5px] text-ink-400">
-              Boarding taps notify the guardian immediately and update the school dashboard.
-            </p>
-          </div>
+            </div>
         )}
 
         {tab === "messages" && (
           <div className="space-y-3 p-4">
             <div>
               <p className="label">Quick messages to parents</p>
-              <p className="mt-1 text-[10.5px] leading-relaxed text-ink-600">
-                One tap sends to every guardian on this route, with your live position attached.
-              </p>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {DRIVER_TEMPLATES.map((t) => (
                   <button
@@ -322,11 +315,7 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
                   </button>
                 ))}
               </div>
-              <p className="mt-3 text-[10.5px] leading-relaxed text-ink-400">
-                Reports go straight to the transport desk with your live position. Parents are
-                auto-notified for breakdowns and delays over 10 minutes.
-              </p>
-            </div>
+</div>
 
             <div className="card p-4">
               <p className="label">Emergency</p>
@@ -377,9 +366,6 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
               </svg>
             </div>
             <p className="mt-3 text-[15px] font-semibold">Emergency alert sent</p>
-            <p className="mt-1 text-[11.5px] leading-relaxed text-ink-500">
-              Transport desk and school security have your live location. They're calling you now.
-            </p>
             <button
               onClick={() => setSos(false)}
               className="mt-4 w-full rounded-full bg-paper-3 py-2.5 text-[12.5px] font-semibold text-ink-900"

@@ -80,7 +80,7 @@ export function computeReminder(
       distanceM: eta.distanceM,
       firesInSec: null,
       state: "offline",
-      message: "Bus is not reporting GPS — reminders resume when it reconnects",
+      message: "Bus offline",
     };
   }
 
@@ -96,8 +96,8 @@ export function computeReminder(
       state: "passed",
       message:
         child.boardStatus === "onboard"
-          ? "Your child is already on the bus"
-          : "The bus has already passed this stop",
+          ? "Already on the bus"
+          : "Stop passed",
     };
   }
 
@@ -115,8 +115,8 @@ export function computeReminder(
     state: firesInSec <= 0 ? "due" : "scheduled",
     message:
       firesInSec <= 0
-        ? `Leave now — ${stop.name} is ${Math.max(1, Math.round(eta.etaSec / 60))} min away`
-        : `Reminder in ${Math.max(1, Math.ceil(firesInSec / 60))} min · bus ${Math.max(1, Math.round(eta.etaSec / 60))} min away`,
+        ? `Leave now · ${Math.max(1, Math.round(eta.etaSec / 60))} min`
+        : `Reminder in ${Math.max(1, Math.ceil(firesInSec / 60))} min`,
   };
 }
 

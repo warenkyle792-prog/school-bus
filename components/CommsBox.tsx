@@ -165,11 +165,6 @@ export default function CommsBox({
                   </p>
                 </div>
                 <p className="mt-1 text-[11.5px] leading-snug text-ink-800">{m.body}</p>
-                {m.from === "school" && (
-                  <p className="mt-1 text-[9px] font-medium text-ink-500">
-                    Sent by the school to every guardian on this route
-                  </p>
-                )}
                 <p className="num mt-1 text-[9px] text-ink-500">
                   {!isMine && m.seenBy.includes("g-01") ? "seen · " : ""}
                   {Math.max(1, Math.round(Math.abs(simSec - m.atSec) / 60))} min ago
@@ -181,7 +176,7 @@ export default function CommsBox({
         <div ref={scrollRef} />
       </div>
 
-      {canMessage ? (
+      {canMessage && (
         <div className="sticky bottom-0 mt-2.5 rounded-xl border border-line bg-paper-2 p-1.5">
           <div className="flex items-end gap-1.5">
             <textarea
@@ -208,14 +203,7 @@ export default function CommsBox({
               </svg>
             </button>
           </div>
-          <p className="mt-1 px-1 text-[9px] leading-relaxed text-ink-500">
-            Emergency channel — the school transport desk is copied on every message here.
-          </p>
         </div>
-      ) : (
-        <p className="mt-2 px-1 text-[9.5px] leading-relaxed text-ink-500">
-          Read-only: only guardians with a child on this route can reply.
-        </p>
       )}
     </div>
   );

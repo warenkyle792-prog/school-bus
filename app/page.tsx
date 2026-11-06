@@ -69,10 +69,6 @@ export default function Home() {
         </div>
 
         <h1 className="mt-10 text-2xl font-semibold tracking-tight sm:text-3xl">Sign in</h1>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-500">
-          Choose the account you use. Each role sees only what it needs — a parent sees their own
-          household, a driver sees their own run.
-        </p>
 
         <div className="mt-6 space-y-2.5">
           {ROLES.map((r) => (
@@ -117,26 +113,6 @@ export default function Home() {
               </svg>
             </Link>
           ))}
-        </div>
-
-        <div className="mt-8 rounded-xl border border-line bg-paper p-4">
-          <p className="text-[10px] font-bold tracking-wider text-ink-500 uppercase">Before you go live</p>
-          <ul className="mt-2 space-y-1.5 text-[11.5px] leading-relaxed text-ink-600">
-            <li className="flex gap-2">
-              <span className="text-ink-500">1.</span>
-              Authentication is not connected yet — these accounts are fixed. Add Supabase Auth to make
-              them real.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-ink-500">2.</span>
-              Bus positions come from the built-in simulator until GPS trackers are posting to
-              <code className="num mx-1 rounded bg-ink-100 px-1 text-[10.5px]">/api/ping</code>.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-ink-500">3.</span>
-              Parents and drivers get their messages in-app. SMS requires a provider key.
-            </li>
-          </ul>
         </div>
       </div>
     </main>

@@ -133,10 +133,6 @@ export default function FleetManager({ snapshot, onShowOnMap }: Props) {
       {mode === "list" && loaded && registry.buses.length === 0 && (
         <div className="rounded-xl border border-dashed border-line p-4 text-center">
           <p className="text-[12px] font-semibold text-ink-800">No buses registered yet</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-ink-500">
-            Add a vehicle and assign its driver. It appears on the live map as soon as its tracker
-            reports.' 
-          </p>
         </div>
       )}
 
@@ -227,9 +223,7 @@ export default function FleetManager({ snapshot, onShowOnMap }: Props) {
               </div>
 
               {!bus.trackerId && (
-                <p className="mt-1.5 text-[10px] leading-relaxed text-sun-600">
-                  No tracker paired — this bus won't stream GPS until you add a tracker ID.
-                </p>
+                <p className="mt-1.5 text-[10px] font-medium text-sun-600">No tracker paired</p>
               )}
             </div>
           );
@@ -397,9 +391,6 @@ function BusForm({
       >
         {saving ? "Registering…" : "Register bus"}
       </button>
-      <p className="mt-1.5 text-[9.5px] leading-relaxed text-ink-500">
-        Without a tracker ID the bus is registered but shows as off-GPS until hardware is paired.
-      </p>
     </form>
   );
 }

@@ -27,7 +27,6 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
           <AppBar clock="--:--" />
           <LoadingState
             title="Connecting to the live fleet"
-            detail="Fetching positions for every active bus"
             error={error}
             onRetry={retry}
           />
@@ -117,13 +116,6 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
               />
             ))}
 
-            <div className="mx-1 mt-4 rounded-xl border border-dashed border-line bg-paper-2/50 p-3">
-              <p className="label">Next departure</p>
-              <p className="mt-1.5 text-[13px] font-semibold">Afternoon run · 15:40</p>
-              <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-500">
-                5 buses assigned. Driver confirmations open at 15:10.
-              </p>
-            </div>
           </div>
         </aside>
 

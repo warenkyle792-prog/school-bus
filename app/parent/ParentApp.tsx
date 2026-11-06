@@ -113,8 +113,8 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
         etaSec: eta.etaSec,
         distanceM: eta.distanceM,
         message: due
-          ? `Leave now — bus is ${Math.max(1, Math.round(eta.etaSec / 60))} min away`
-          : `${Math.max(1, Math.ceil(firesInSec / 60))} min until your reminder`,
+          ? `Leave now · ${Math.max(1, Math.round(eta.etaSec / 60))} min`
+          : `Reminder in ${Math.max(1, Math.ceil(firesInSec / 60))} min`,
       });
     }
     return out;
@@ -138,8 +138,8 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
     const child = myChildren.find((c) => c.id === ids[0]);
     setToast(
       child
-        ? `Pickup reminder sent: ${child.name.split(" ")[0]}'s bus arrives soon — head to the pickup point.`
-        : "Pickup reminder sent."
+        ? `Pickup reminder · ${child.name.split(" ")[0]}'s bus is close`
+        : "Pickup reminder sent"
     );
     const t = setTimeout(() => setToast(null), 6000);
     return () => clearTimeout(t);
@@ -150,7 +150,6 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
       <Shell schoolName="Riverside Academy" guardianName="…">
         <LoadingState
           title="Finding your child's bus"
-          detail="Connecting to live GPS"
           error={error}
           onRetry={retry}
         />
@@ -218,10 +217,7 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
             {snapshot.phase.current === "after_service" && (
               <div className="card p-4">
                 <p className="text-[12.5px] font-semibold">Today's runs are finished</p>
-                <p className="mt-1 text-[11.5px] leading-relaxed text-ink-600">
-                  All children were delivered. {snapshot.phase.nextEvent.toLowerCase()}.
-                </p>
-              </div>
+                </div>
             )}
 
             {!bus ? (
@@ -329,9 +325,6 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
 
                       {!lead ? (
                         <>
-                          <p className="mt-1 text-[10.5px] leading-relaxed text-ink-600">
-                            Get a nudge before the bus reaches {stop.name}.
-                          </p>
                           <div className="mt-2 flex gap-1.5">
                             {LEAD_OPTIONS.map((m) => (
                               <button
@@ -339,7 +332,7 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
                                 onClick={() => {
                                   setLeadByChild((p) => ({ ...p, [child.id]: m }));
                                   setNotified((p) => ({ ...p, [child.id]: false }));
-                                  setToast(`Reminder set — we'll nudge you ${m} min before the bus arrives.`);
+                                  setToast(`Reminder set for ${m} min before arrival.`);
                                   setTimeout(() => setToast(null), 5000);
                                 }}
                                 className="flex-1 rounded-full border border-brand-600/30 bg-brand-100 py-1.5 text-[11px] font-bold text-brand-600 transition hover:bg-brand-200"
@@ -353,11 +346,11 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
                         <div className="mt-1.5">
                           <p className="text-[11.5px] leading-snug font-semibold text-ink-900">
                             {reminder?.state === "due" || reminder?.state === "fired"
-                              ? "🔔 Head to your pickup point now"
+                              ? "🔔 Go to the pickup point"
                               : reminder?.state === "offline"
-                                ? "Reminders paused — bus is off GPS"
+                                ? "Paused — bus offline"
                                 : reminder?.state === "passed"
-                                  ? "Bus has passed this stop"
+                                  ? "Bus passed this stop"
                                   : `${reminder?.message ?? "Scheduled"}`}
                           </p>
                           <div className="mt-1.5 flex items-center gap-1.5">
@@ -460,10 +453,6 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
                       );
                     })}
                   </div>
-                  <p className="mt-2 text-[9.5px] leading-relaxed text-ink-500">
-                    You only see the buses your children ride. The rest of the fleet is managed by the
-                    school.
-                  </p>
                 </div>
               </>
             )}

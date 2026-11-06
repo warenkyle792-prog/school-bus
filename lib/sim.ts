@@ -406,7 +406,7 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
       return {
         current: "before_service",
         label: "Before service",
-        detail: "Buses are parked. The morning run starts shortly.",
+        detail: "Buses parked",
         nextEvent: `First departures ${hhmm(DAY.pickupStart)}`,
       };
     }
@@ -414,7 +414,7 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
       return {
         current: "pickup",
         label: "Morning pickup run",
-        detail: "Buses are collecting students from their stops.",
+        detail: "Collecting students",
         nextEvent: `Handover at school ${hhmm(DAY.arriveAt)}`,
       };
     }
@@ -422,7 +422,7 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
       return {
         current: "in_session",
         label: "In session",
-        detail: "All students handed over. Buses are parked at the school until the drop-off run.",
+        detail: "All students handed over",
         nextEvent: `Afternoon run ${hhmm(DAY.dropoffStart)}`,
       };
     }
@@ -430,14 +430,14 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
       return {
         current: "dropoff",
         label: "Afternoon drop-off run",
-        detail: "Buses are taking students home.",
+        detail: "Taking students home",
         nextEvent: `Run completes ${hhmm(DAY.dropoffEnd)}`,
       };
     }
     return {
       current: "after_service",
       label: "Service finished",
-      detail: "All students delivered. Buses return to the yard for the night.",
+      detail: "All students delivered",
       nextEvent: `Morning run tomorrow ${hhmm(DAY.pickupStart)}`,
     };
   })();

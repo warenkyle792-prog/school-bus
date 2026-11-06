@@ -48,11 +48,11 @@ export function LoadingState({
         <p className="mt-3 text-[13px] font-semibold text-ink-800">
           {failed ? (error ?? "Still waiting for the live feed") : title}
         </p>
-        <p className="mt-1 text-[11.5px] leading-relaxed text-ink-500">
-          {failed
-            ? "Your data is safe. This is a connection problem, not a data problem."
-            : (detail ?? "Connecting to the transport feed")}
-        </p>
+        {failed ? (
+          <p className="mt-1 text-[11.5px] text-ink-500">Connection problem</p>
+        ) : (
+          detail && <p className="mt-1 text-[11.5px] text-ink-500">{detail}</p>
+        )}
 
         {failed && onRetry && (
           <button
