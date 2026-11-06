@@ -233,6 +233,10 @@ Each route stretches its own timetable to fit that envelope, so the slowest rout
 still arrives on time. `TIME_SCALE` (60) accelerates the clock only — a simulated minute still takes
 a real minute, but the positions track the clock exactly.
 
+Buses also **dwell at each stop** for three minutes while children board, so the pickup run
+is a sweep with real arrivals rather than one continuous slide — that dwell is the window a
+guardian's distance counter and the driver's "to pick up" list are watching.
+
 `solution.phase` is exposed in the snapshot so the UI can explain a quiet console ("Service finished
 — morning run tomorrow 06:40") instead of looking broken, and occupancy is derived from the drawn
 position rather than a running total — which is what keeps the on-board count honest during the

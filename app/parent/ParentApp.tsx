@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import MapCanvas from "@/components/MapCanvas";
+import RouteMap from "@/components/RouteMap";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
 import type { Snapshot as LiveSnapshot } from "@/lib/types";
 import { Avatar, LiveBadge, StatusPill } from "@/components/ui";
@@ -182,6 +182,12 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
 
   const routeAlerts = snapshot.alerts.filter((a) => a.busId === bus?.id).slice(0, 8);
 
+  // Children boarding at this guardian's own stop — the "to be picked up" number.
+  const atMyStop = snapshot.students.filter(
+    (s) => s.busId === bus?.id && s.stopId === stop.id && s.boardStatus !== "absent"
+  );
+  const kidsAtStop = atMyStop.filter((s) => s.boardStatus === "waiting");
+
   return (
     <Shell clock={snapshot.clockLabel} schoolName={snapshot.school.shortName} guardianName={guardian?.name ?? ""}>
       {/* child switcher — only this guardian's children */}
@@ -214,35 +220,16 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
       <div className="relative min-h-[45%] flex-1 overflow-hidden">
         {bus ? (
           <>
-            <MapCanvas view={{ center: bus.position, zoom: 2.9 }} labels={false} className="absolute inset-0">
-                  {(project) => {
-                    const b = project(bus.position);
-                    const s = project(stop.coord);
-                    const school = project(snapshot.school.coord);
-                    const d = route.path
-                      .map((pt, i) => {
-                        const p = project(pt);
-                        return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-                      })
-                      .join(" ");
-                    return (
-                      <svg width="100%" height="100%" className="absolute inset-0">
-                        <path d={d} fill="none" stroke="#17181b" strokeWidth="9" strokeLinecap="round" strokeOpacity="0.7" />
-                        <path d={d} fill="none" stroke={route.color} strokeWidth="3.4" strokeLinecap="round" strokeOpacity="0.9" />
-                        <line x1={b.x} y1={b.y} x2={s.x} y2={s.y} stroke={route.color} strokeWidth="2" strokeDasharray="4 4" strokeOpacity="0.6" />
-                        <circle cx={school.x} cy={school.y} r="6" fill="#c9f27a" stroke="#17181b" strokeWidth="2" />
-                        <g>
-                          <circle cx={s.x} cy={s.y} r="13" fill="#17181b" stroke={route.color} strokeWidth="2.5" />
-                          <text x={s.x} y={s.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill={route.color}>
-                            {child.name[0]}
-                          </text>
-                        </g>
-                        <circle cx={b.x} cy={b.y} r="15" fill={route.color} opacity="0.18" />
-                        <circle cx={b.x} cy={b.y} r="8.5" fill={route.color} stroke="#17181b" strokeWidth="2.5" />
-                      </svg>
-                    );
-                  }}
-            </MapCanvas>
+            <RouteMap
+              bus={bus}
+              path={route.path}
+              color={route.color}
+              stops={route.stops}
+              school={snapshot.school.coord}
+              nextStopId={bus.nextStopId}
+              highlight={[{ stopId: stop.id, count: atMyStop.length, label: "My stop" }]}
+              distanceLabels={{ [stop.id]: `${Math.round((eta?.distanceM ?? 0) / 10) * 10} m away` }}
+            />
 
             {/* ETA + reminder float over the map */}
             <div className="absolute inset-x-3 bottom-3 z-10">
@@ -425,9 +412,54 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
 
               <div className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3">
                 <MiniStat label="Pickup stop" value={stop.name.split(" ").slice(0, 2).join(" ")} />
-                <MiniStat label="To school" value={bus ? fmtDuration(bus.etaSec) : "--"} />
+                <MiniStat
+                  label="Bus from stop"
+                  value={eta?.distanceM ? `${(eta.distanceM / 1000).toFixed(1)} km` : "here"}
+                />
                 <MiniStat label="Bus" value={bus?.plate ?? "None"} />
               </div>
+            </div>
+
+            {/* students still to be picked up at this household's stop */}
+            <div className="card p-3.5">
+              <div className="flex items-center justify-between">
+                <p className="label">To be picked up</p>
+                <span className="num text-[10px] text-ink-500">{kidsAtStop.length} waiting · {stop.name}</span>
+              </div>
+              {kidsAtStop.length === 0 ? (
+                <p className="mt-1.5 text-[11.5px] text-ink-600">
+                  {child.boardStatus === "waiting"
+                    ? `${child.name.split(" ")[0]} is waiting`
+                    : child.boardStatus === "onboard"
+                      ? `${child.name.split(" ")[0]} is on the bus`
+                      : `${child.name.split(" ")[0]} was dropped off`}
+                </p>
+              ) : (
+                <div className="mt-2 space-y-1.5">
+                  {kidsAtStop.map((k) => {
+                    const mine = k.guardianId === DEMO_GUARDIAN_ID;
+                    return (
+                      <div key={k.id} className="flex items-center gap-2 rounded-lg bg-ink-50 px-2 py-1.5">
+                        <Avatar name={k.name} hue={k.avatarHue} size={24} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[11.5px] font-semibold text-ink-800">{k.name}</span>
+                          <span className="block truncate text-[10px] text-ink-500">
+                            {k.grade} {k.class}
+                          </span>
+                        </span>
+                        {mine && (
+                          <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[9px] font-bold text-brand-600 uppercase">
+                            yours
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="num mt-2 text-[10px] text-ink-500">
+                {eta?.distanceM ? `${Math.round((eta.distanceM / 10) * 10)} m from this stop` : "bus at this stop"}
+              </p>
             </div>
 
             {/* buses on this household only */}

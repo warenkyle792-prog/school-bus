@@ -7,10 +7,11 @@ import type { Snapshot as LiveSnapshot } from "@/lib/types";
 import { Avatar } from "@/components/ui";
 import ThemePicker, { ThemeBoot } from "@/components/ThemePicker";
 import CommsBox from "@/components/CommsBox";
-import MapCanvas from "@/components/MapCanvas";
+import RouteMap from "@/components/RouteMap";
 import { LoadingState, StaleBanner } from "@/components/LoadState";
 import { DRIVER_TEMPLATES, type CommMessage } from "@/lib/messages";
 import { cx, fmtDuration } from "@/lib/format";
+import { etaToStop } from "@/lib/eta";
 
 /** Signed-in driver for this session: R-01. */
 const DEMO_DRIVER_ID = "d-01";
@@ -53,6 +54,18 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
   // the live manifest is the source of truth; local taps are visual confirmation
   const totalBoarded = Math.min(bus.capacity, Math.max(bus.onBoard, stopKids.filter((k) => boarded[k.id]).length + bus.onBoard - checkedIn));
 
+  // Everyone this run still has to collect, stop by stop, with the bus's live
+  // straight-line distance to each stop.
+  const pickupStops = route.stops
+    .map((stop) => {
+      const waiting = manifest.filter((s) => s.stopId === stop.id && s.boardStatus === "waiting");
+      const eta = etaToStop(bus, route, stop);
+      return { stop, waiting, eta };
+    })
+    .filter((row) => row.waiting.length > 0);
+
+  const totalWaiting = pickupStops.reduce((n, row) => n + row.waiting.length, 0);
+
   const confirmStop = (id: string) =>
     setConfirmed((prev) => (prev.includes(id) ? prev : [...prev, id]));
 
@@ -90,42 +103,34 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
 
       {/* ── Map first ──────────────────────────────────────────────── */}
       <div className="relative min-h-[38%] flex-1 overflow-hidden border-b border-line">
-        <MapCanvas view={{ center: bus.position, zoom: 2.9 }} labels={false} className="absolute inset-0">
-          {(project) => {
-            const b = project(bus.position);
-            const n = project(matchedStop.coord);
-            const school = project(snapshot.school.coord);
-            const d = route.path
-              .map((pt, i) => {
-                const p = project(pt);
-                return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-              })
-              .join(" ");
-            return (
-              <svg width="100%" height="100%" className="absolute inset-0">
-                <path d={d} fill="none" stroke="#17181b" strokeWidth="9" strokeLinecap="round" strokeOpacity="0.7" />
-                <path d={d} fill="none" stroke={route.color} strokeWidth="3.4" strokeLinecap="round" strokeOpacity="0.9" />
-                <line x1={b.x} y1={b.y} x2={n.x} y2={n.y} stroke={route.color} strokeWidth="2" strokeDasharray="4 4" strokeOpacity="0.6" />
-                <circle cx={school.x} cy={school.y} r="6" fill="#c9f27a" stroke="#17181b" strokeWidth="2" />
-                <g>
-                  <circle cx={n.x} cy={n.y} r="13" fill="#17181b" stroke={route.color} strokeWidth="2.5" />
-                  <text x={n.x} y={n.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill={route.color}>
-                    {stopIdx + 1}
-                  </text>
-                </g>
-                <circle cx={b.x} cy={b.y} r="15" fill={route.color} opacity="0.18" />
-                <circle cx={b.x} cy={b.y} r="8.5" fill={route.color} stroke="#17181b" strokeWidth="2.5" />
-              </svg>
-            );
-          }}
-        </MapCanvas>
+        <RouteMap
+          bus={bus}
+          path={route.path}
+          color={route.color}
+          stops={route.stops}
+          school={snapshot.school.coord}
+          nextStopId={matchedStop.id}
+          highlight={pickupStops.map((row) => ({
+            stopId: row.stop.id,
+            count: row.waiting.length,
+            label: row.stop.name.split(" ")[0],
+          }))}
+          distanceLabels={Object.fromEntries(
+            pickupStops.map((row) => [
+              row.stop.id,
+              row.eta.distanceM >= 1000
+                ? `${(row.eta.distanceM / 1000).toFixed(1)} km`
+                : `${Math.round(row.eta.distanceM / 10) * 10} m`,
+            ])
+          )}
+        />
 
         <div className="absolute inset-x-3 top-3 z-10 flex items-center justify-between gap-2">
           <span className="rounded-full border border-line/80 bg-paper-2/90 px-2.5 py-1 text-[11px] font-semibold text-ink-700 backdrop-blur">
             {bus.speedKph} kph · {bus.onBoard}/{bus.capacity} aboard
           </span>
-          <span className="num rounded-full border border-line/80 bg-paper-2/90 px-2.5 py-1 text-[11px] font-semibold text-ink-700 backdrop-blur">
-            {fmtDuration(bus.etaSec)} to school
+          <span className="rounded-full border border-brand-600/40 bg-brand-100 px-2.5 py-1 text-[11px] font-bold text-brand-600 backdrop-blur">
+            {totalWaiting} to pick up
           </span>
         </div>
 
@@ -222,6 +227,41 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
                   );
                 })}
               </div>
+            </div>
+
+            {/* students still to be picked up, stop by stop */}
+            <div className="card p-3.5">
+              <div className="flex items-center justify-between">
+                <p className="label">Still to pick up</p>
+                <span className="num text-[10px] text-ink-500">{totalWaiting} students</span>
+              </div>
+              {pickupStops.length === 0 ? (
+                <p className="mt-1.5 text-[11.5px] text-ink-600">Everyone is on board</p>
+              ) : (
+                <div className="mt-2 space-y-1.5">
+                  {pickupStops.map((row) => (
+                    <div key={row.stop.id} className="flex items-center gap-2 rounded-lg bg-ink-50 px-2 py-1.5">
+                      <span
+                        className="grid size-6 shrink-0 place-items-center rounded-full text-[10px] font-bold text-canvas"
+                        style={{ background: row.stop.id === matchedStop.id ? route.color : "#4c4e51" }}
+                      >
+                        {row.waiting.length}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[11.5px] font-semibold text-ink-800">{row.stop.name}</span>
+                        <span className="block truncate text-[10px] text-ink-500">
+                          {row.stop.id === matchedStop.id ? "next stop" : row.stop.area}
+                        </span>
+                      </span>
+                      <span className="num shrink-0 text-[11px] font-semibold text-ink-700">
+                        {row.eta.distanceM >= 1000
+                          ? `${(row.eta.distanceM / 1000).toFixed(1)} km`
+                          : `${Math.round(row.eta.distanceM / 10) * 10} m`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* run stats */}

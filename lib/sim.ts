@@ -109,6 +109,12 @@ export const DAY = {
   dropoffStart: 15 * 3600 + 30 * 60,
   /** back at the last stop */
   dropoffEnd: 16 * 3600 + 40 * 60,
+  /**
+   * How long a bus sits at each stop collecting or dropping children. A real
+   * run dwells at a stop; without it the pickup run is one continuous sweep and
+   * a guardian never sees a bus arrive.
+   */
+  stopDwellSec: 3 * 60,
 };
 
 const hhmm = (sec: number) => {
@@ -130,23 +136,42 @@ const hhmm = (sec: number) => {
 export function busRun(route: Route, clockSec: number): BusRun {
   const trip = route.durationSec;
 
-  // 1. boarding at the first stop
+  // 1. overnight and early morning: parked at the first stop, children waiting
   if (clockSec < DAY.pickupStart) {
     return { tripIndex: -1, direction: "morning", elapsedSec: 0, progress: 0, parked: "at_stop", frac: 0 };
   }
 
-  // 2. pickup run, stretched so the slowest route still arrives on time
+  // 2. pickup run, stretched so the slowest route still arrives on time.
+  //    A run is not one continuous sweep: the bus dwells at every stop while
+  //    children board, which is exactly the window a guardian is watching for.
   const pickupSpan = DAY.arriveAt - DAY.pickupStart;
   if (clockSec < DAY.arriveAt) {
-    const f = (clockSec - DAY.pickupStart) / pickupSpan;
-    const elapsed = f * trip;
+    const dwell = DAY.stopDwellSec;
+    const drivingSpan = Math.max(1, pickupSpan - dwell * route.stops.length);
+    const scale = drivingSpan / trip;
+    const ridingSec = Math.max(0, clockSec - DAY.pickupStart);
+
+    // wall time spent for a given amount of driving: driving + dwell at the
+    // stops already reached. Invert it so the bus actually holds at a stop.
+    const wallAt = (drivingSec: number) =>
+      drivingSec * scale + dwell * route.stops.filter((st) => drivingSec >= st.offsetSec).length;
+
+    let lo = 0;
+    let hi = trip;
+    for (let i = 0; i < 26; i++) {
+      const mid = (lo + hi) / 2;
+      if (wallAt(mid) < ridingSec) lo = mid;
+      else hi = mid;
+    }
+    const elapsed = (lo + hi) / 2;
+
     return {
       tripIndex: 0,
       direction: "morning",
       elapsedSec: elapsed,
       progress: progressFor(route, elapsed),
       parked: "none",
-      frac: f,
+      frac: Math.min(1, ridingSec / pickupSpan),
     };
   }
 
@@ -370,6 +395,10 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
     if (bus.parkState === "at_school") {
       // handover done — they are in class
       boardStatus = "dropped";
+    } else if (bus.parkState === "at_stop" && (bus.tripIndex === -1 || bus.tripIndex === 1)) {
+      // Parked overnight in the bay: the day's trip has not started, so nobody
+      // is aboard. Without this a parked bus reports a full load every night.
+      boardStatus = "waiting";
     } else if (bus.direction === "morning") {
       boardStatus = passed ? "onboard" : "waiting";
     } else {
