@@ -151,6 +151,13 @@ export type Snapshot = {
   guardians: Guardian[];
   alerts: Alert[];
   events: TripEvent[];
+  /** Where the whole school operation is in the day, so the UI can explain a quiet console. */
+  phase: {
+    current: "before_service" | "pickup" | "in_session" | "dropoff" | "after_service";
+    label: string;
+    detail: string;
+    nextEvent: string;
+  };
   kpis: {
     busesActive: number;
     busesTotal: number;

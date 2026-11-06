@@ -212,8 +212,28 @@ failures the UI shows a **stale banner** with the age of the data and a retry, r
 the numbers are live. Before the first successful load, `LoadingState` explains what it is waiting
 for and offers a retry after 8 s instead of spinning forever.
 
-Simulated time runs at **10×** wall clock (`TIME_SCALE` in `lib/sim.ts`) — a full school run takes a
-couple of minutes to watch. Change it there for demos, or set it to `1` to reason about real timings.
+### The school day
+
+The simulator is driven by **time of day**, not by how long the server has been up — a bus is on the
+road at 07:10 and parked overnight, and the console clock always agrees with the leg each bus claims
+to be on:
+
+| Clock (EAT) | Phase | What happens |
+| --- | --- | --- |
+| before 06:40 | Before service | buses parked at their first stop |
+| 06:40 – 07:40 | Morning pickup | fills up stop by stop, arrives at school |
+| 07:40 – 15:30 | In session | everyone handed over, buses parked at school |
+| 15:30 – 16:40 | Afternoon drop-off | empties stop by stop in reverse |
+| after 16:40 | Service finished | buses return to the yard |
+
+Each route stretches its own timetable to fit that envelope, so the slowest route (R-05, 14.6 km)
+still arrives on time. `TIME_SCALE` (60) accelerates the clock only — a simulated minute still takes
+a real minute, but the positions track the clock exactly.
+
+`solution.phase` is exposed in the snapshot so the UI can explain a quiet console ("Service finished
+— morning run tomorrow 06:40") instead of looking broken, and occupancy is derived from the drawn
+position rather than a running total — which is what keeps the on-board count honest during the
+reverse drop-off leg.
 
 ## Why the map is hand-drawn
 

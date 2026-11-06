@@ -17,10 +17,11 @@ import type { RegisteredBus, RegisteredDriver } from "./store";
  * How fast simulated time runs compared with wall clock.
  * Higher = buses move more on screen. 1 would be real time.
  */
-export const TIME_SCALE = 10;
+export const TIME_SCALE = 60;
 
-const PARK_STOP_SEC = 200;
-const PARK_SCHOOL_SEC = 240;
+/** Kenya is UTC+3 year-round (no daylight saving). */
+const EAT_OFFSET_MS = 3 * 60 * 60 * 1000;
+
 
 /** Breakdown window, expressed as a fraction of a bus's round trip. */
 const BREAKDOWN = { busId: "b-04", from: 0.1, to: 0.26, atProgress: 0.46 };
@@ -98,41 +99,80 @@ export type BusRun = {
   frac: number;
 };
 
-/**
- * Each bus loops a full round trip:
- *   park at first stop → morning run to school → park at school → afternoon run back out → repeat.
- * Position is continuous at both turnarounds, so nothing teleports.
- */
-export function busRun(route: Route, phase: number, simSec: number): BusRun {
-  const trip = route.durationSec;
-  const legLen = trip + PARK_STOP_SEC + PARK_SCHOOL_SEC;
-  const roundLen = legLen * 2 + PARK_STOP_SEC + PARK_SCHOOL_SEC;
-  const local = (((simSec + phase * roundLen) % roundLen) + roundLen) % roundLen;
+/** The school day the simulator plays out, in local clock seconds. */
+export const DAY = {
+  /** buses begin boarding at their first stop */
+  pickupStart: 6 * 3600 + 40 * 60,
+  /** handover at school */
+  arriveAt: 7 * 3600 + 40 * 60,
+  /** buses leave school on the drop-off run */
+  dropoffStart: 15 * 3600 + 30 * 60,
+  /** back at the last stop */
+  dropoffEnd: 16 * 3600 + 40 * 60,
+};
 
-  // 1. parked at first stop (boarding)
-  let cursor = PARK_STOP_SEC;
-  if (local < cursor) {
-    return { tripIndex: Math.floor((simSec + phase * roundLen) / roundLen), direction: "morning", elapsedSec: 0, progress: 0, parked: "at_stop", frac: local / roundLen };
+const hhmm = (sec: number) => {
+  const s = ((sec % 86400) + 86400) % 86400;
+  return `${String(Math.floor(s / 3600)).padStart(2, "0")}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}`;
+};
+
+/**
+ * Where a bus is at a given clock time.
+ *
+ * Driven by time of day rather than by how long the server has been running:
+ * a school bus is on the road at 07:10 and parked overnight, and the console
+ * clock must agree with the leg a bus claims to be on. Every route shares the
+ * same departure envelope and stretches its own timetable to fit.
+ *
+ *   boarding → pickup run → handover → parked at school
+ *            → drop-off run → parked at the last stop (overnight)
+ */
+export function busRun(route: Route, clockSec: number): BusRun {
+  const trip = route.durationSec;
+
+  // 1. boarding at the first stop
+  if (clockSec < DAY.pickupStart) {
+    return { tripIndex: -1, direction: "morning", elapsedSec: 0, progress: 0, parked: "at_stop", frac: 0 };
   }
-  // 2. morning run out to school
-  if (local < cursor + trip) {
-    const elapsed = local - cursor;
-    return { tripIndex: Math.floor((simSec + phase * roundLen) / roundLen), direction: "morning", elapsedSec: elapsed, progress: progressFor(route, elapsed), parked: "none", frac: local / roundLen };
+
+  // 2. pickup run, stretched so the slowest route still arrives on time
+  const pickupSpan = DAY.arriveAt - DAY.pickupStart;
+  if (clockSec < DAY.arriveAt) {
+    const f = (clockSec - DAY.pickupStart) / pickupSpan;
+    const elapsed = f * trip;
+    return {
+      tripIndex: 0,
+      direction: "morning",
+      elapsedSec: elapsed,
+      progress: progressFor(route, elapsed),
+      parked: "none",
+      frac: f,
+    };
   }
-  cursor += trip;
-  // 3. parked at school (handover)
-  if (local < cursor + PARK_SCHOOL_SEC) {
-    return { tripIndex: Math.floor((simSec + phase * roundLen) / roundLen), direction: "morning", elapsedSec: trip, progress: 1, parked: "at_school", frac: local / roundLen };
+
+  // 3. parked at school through the school day
+  if (clockSec < DAY.dropoffStart) {
+    const f = (clockSec - DAY.arriveAt) / (DAY.dropoffStart - DAY.arriveAt);
+    return { tripIndex: 0, direction: "morning", elapsedSec: trip, progress: 1, parked: "at_school", frac: f };
   }
-  cursor += PARK_SCHOOL_SEC;
-  // 4. afternoon run back out, visiting stops in reverse
-  if (local < cursor + trip) {
-    const elapsed = local - cursor;
-    return { tripIndex: Math.floor((simSec + phase * roundLen) / roundLen), direction: "afternoon", elapsedSec: trip - elapsed, progress: progressFor(route, trip - elapsed), parked: "none", frac: local / roundLen };
+
+  // 4. drop-off run, stops visited in reverse
+  const dropSpan = DAY.dropoffEnd - DAY.dropoffStart;
+  if (clockSec < DAY.dropoffEnd) {
+    const f = (clockSec - DAY.dropoffStart) / dropSpan;
+    const elapsed = trip - f * trip;
+    return {
+      tripIndex: 1,
+      direction: "afternoon",
+      elapsedSec: elapsed,
+      progress: progressFor(route, elapsed),
+      parked: "none",
+      frac: f,
+    };
   }
-  cursor += trip;
-  // 5. parked back at the first stop
-  return { tripIndex: Math.floor((simSec + phase * roundLen) / roundLen), direction: "morning", elapsedSec: 0, progress: 0, parked: "at_stop", frac: local / roundLen };
+
+  // 5. parked at the last stop until tomorrow
+  return { tripIndex: 1, direction: "afternoon", elapsedSec: 0, progress: 0, parked: "at_stop", frac: 1 };
 }
 
 export type SnapshotOptions = {
@@ -165,24 +205,32 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
   const startedAtMs = opts.startedAtMs ?? 0;
   const simSec = Math.floor(((nowMs - startedAtMs) / 1000) * scale);
 
-  // A believable school-day clock that only ever moves forward.
-  const DAY_START = 6 * 3600 + 40 * 60;
-  const clockSec = (DAY_START + simSec) % 86400;
-  const clockLabel = `${String(Math.floor(clockSec / 3600)).padStart(2, "0")}:${String(
-    Math.floor((clockSec % 3600) / 60)
-  ).padStart(2, "0")}`;
+  // The console clock is the real time of day (Nairobi, UTC+3), advanced by the
+  // same speed-up as the buses. It never wraps into an impossible hour.
+  const kenyaNowSec = Math.floor((nowMs + EAT_OFFSET_MS) / 1000);
+  const clockSec = (kenyaNowSec + simSec) % 86400;
+  const clockLabel = hhmm(clockSec);
 
   const buses: Bus[] = BUSES.map((b) => {
     const route = ROUTES.find((r) => r.id === b.routeId)!;
-    const phase = ROUTE_PHASES[route.id] ?? 0;
-    const run = busRun(route, phase, simSec);
+    // A small per-route phase keeps buses from hitting every stop in lockstep
+    // without breaking the time-of-day contract.
+    const phase = (ROUTE_PHASES[route.id] ?? 0) * 90;
+    const run = busRun(route, clockSec + phase);
 
+    // One scripted incident during the pickup run, so the console has a real
+    // emergency to handle rather than a random status flicker.
     const isBroken =
-      b.id === BREAKDOWN.busId && run.frac >= BREAKDOWN.from && run.frac <= BREAKDOWN.to;
+      b.id === BREAKDOWN.busId &&
+      run.direction === "morning" &&
+      run.parked === "none" &&
+      clockSec >= DAY.pickupStart + 900 &&
+      clockSec <= DAY.pickupStart + 3300;
 
     let progress = run.progress;
     let status: Bus["status"] = "on_time";
-    if (run.parked === "at_school") status = "finished";
+    // "finished" means: not on the road right now (handover, or parked overnight).
+    if (run.parked === "at_school" || run.parked === "at_stop") status = "finished";
     if (isBroken) {
       progress = Math.min(progress, BREAKDOWN.atProgress);
       status = "breakdown";
@@ -197,9 +245,12 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
     const baseDelay = Math.round(noise(route.id.charCodeAt(3) + 2) * 240);
     const delaySec = isBroken
       ? 840 + Math.round(wobble * 180)
-      : Math.round(baseDelay + Math.sin(simSec / 140 + route.id.charCodeAt(3)) * 55) - 60;
+      : run.parked !== "none"
+        ? 0
+        : Math.round(baseDelay + Math.sin(simSec / 140 + route.id.charCodeAt(3)) * 55) - 60;
 
-    if (!isBroken && delaySec > 200) status = "delayed";
+    // Only a bus that is actually moving can be running late.
+    if (!isBroken && run.parked === "none" && delaySec > 200) status = "delayed";
 
     const elapsed = run.elapsedSec;
     const nextStop: Stop =
@@ -208,11 +259,20 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
         : ([...route.stops].reverse().find((s) => s.offsetSec < elapsed) ?? route.stops[0]);
 
     const assigned = STUDENTS.filter((s) => s.busId === b.id);
-    const morningShare = Math.min(1, progress * 1.15);
-    const onBoard =
-      run.direction === "morning"
-        ? Math.round(assigned.length * (run.parked === "at_school" ? 1 : morningShare))
-        : Math.round(assigned.length * (1 - morningShare));
+    // Occupancy is the direct read of the leg:
+    //  boarding/pickup  → fills up as stops are served
+    //  at school        → everyone aboard (handover)
+    //  drop-off         → empties as stops are served in reverse
+    //  overnight        → empty
+    // Occupancy reads straight off the drawn position, because progress is
+    // 0 at the outer stops and 1 at school on both legs:
+    //   pickup  → fills as the bus travels outward to school
+    //   drop-off→ empties as it travels back out from school
+    const share = Math.min(1, progress * 1.15);
+    let onBoard: number;
+    if (run.parked === "at_school") onBoard = assigned.length;
+    else if (run.parked === "at_stop") onBoard = run.direction === "morning" ? 0 : 0;
+    else onBoard = Math.round(assigned.length * share);
 
     const moving = run.parked === "none" && !isBroken;
     const remainingSec =
@@ -244,10 +304,7 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
   for (const reg of opts.registeredBuses ?? []) {
     const route = ROUTES.find((r) => r.id === reg.routeId);
     if (!route) continue;
-    // A stable per-bus phase so newly registered buses are spread along the
-    // route instead of all stacked at the first stop.
-    const phase = hash(reg.id);
-    const run = busRun(route, phase, simSec);
+    const run = busRun(route, clockSec);
     const coord = pointAt(route, run.progress);
     const idx = Math.round(run.progress * (route.path.length - 1));
     const jitter = noise(hash(reg.id) * 1000 + Math.floor(simSec / 15));
@@ -310,8 +367,11 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
     const elapsed = bus.direction === "morning" ? route.durationSec - bus.etaSec : bus.etaSec;
     const passed = elapsed >= stop.offsetSec;
     let boardStatus: Snapshot["students"][number]["boardStatus"];
-    if (bus.direction === "morning") {
-      boardStatus = bus.parkState === "at_school" ? "onboard" : passed ? "onboard" : "waiting";
+    if (bus.parkState === "at_school") {
+      // handover done — they are in class
+      boardStatus = "dropped";
+    } else if (bus.direction === "morning") {
+      boardStatus = passed ? "onboard" : "waiting";
     } else {
       boardStatus = passed ? "dropped" : "onboard";
     }
@@ -339,11 +399,54 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
   const totalStudents = students.length;
   const onBoard = students.filter((s) => s.boardStatus === "onboard").length;
   const dropped = students.filter((s) => s.boardStatus === "dropped").length;
+  const accounted = students.filter((s) => s.boardStatus !== "waiting").length;
+
+  const phase = ((): Snapshot["phase"] => {
+    if (clockSec < DAY.pickupStart) {
+      return {
+        current: "before_service",
+        label: "Before service",
+        detail: "Buses are parked. The morning run starts shortly.",
+        nextEvent: `First departures ${hhmm(DAY.pickupStart)}`,
+      };
+    }
+    if (clockSec < DAY.arriveAt) {
+      return {
+        current: "pickup",
+        label: "Morning pickup run",
+        detail: "Buses are collecting students from their stops.",
+        nextEvent: `Handover at school ${hhmm(DAY.arriveAt)}`,
+      };
+    }
+    if (clockSec < DAY.dropoffStart) {
+      return {
+        current: "in_session",
+        label: "In session",
+        detail: "All students handed over. Buses are parked at the school until the drop-off run.",
+        nextEvent: `Afternoon run ${hhmm(DAY.dropoffStart)}`,
+      };
+    }
+    if (clockSec < DAY.dropoffEnd) {
+      return {
+        current: "dropoff",
+        label: "Afternoon drop-off run",
+        detail: "Buses are taking students home.",
+        nextEvent: `Run completes ${hhmm(DAY.dropoffEnd)}`,
+      };
+    }
+    return {
+      current: "after_service",
+      label: "Service finished",
+      detail: "All students delivered. Buses return to the yard for the night.",
+      nextEvent: `Morning run tomorrow ${hhmm(DAY.pickupStart)}`,
+    };
+  })();
 
   return {
     serverTimeMs: nowMs,
     simSec,
     clockLabel,
+    phase,
     school: SCHOOL,
     routes: ROUTES,
     buses,
@@ -363,7 +466,7 @@ export function snapshotAt(nowMs: number, opts: SnapshotOptions = {}): Snapshot 
         ? Math.round(activeBuses.reduce((a, b) => a + Math.max(0, b.delaySec), 0) / activeBuses.length)
         : 0,
       openAlerts: alerts.filter((a) => !a.acknowledged && a.severity !== "info").length,
-      attendancePct: totalStudents ? Math.round(((onBoard + dropped) / totalStudents) * 100) : 0,
+      attendancePct: totalStudents ? Math.round((accounted / totalStudents) * 100) : 0,
     },
   };
 }

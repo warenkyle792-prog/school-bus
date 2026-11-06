@@ -64,7 +64,7 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
                 <p className="label">Fleet</p>
                 <p className="mt-1 text-2xl leading-none font-semibold tracking-tight">
                   {snapshot.kpis.busesActive}
-                  <span className="text-sm font-normal text-ink-400"> / {snapshot.kpis.busesTotal} out</span>
+                  <span className="text-sm font-normal text-ink-500"> / {snapshot.kpis.busesTotal} on the road</span>
                 </p>
               </div>
               <button
@@ -82,6 +82,24 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
                 All routes
               </button>
             </div>
+          </div>
+
+          <div className="mx-2.5 mb-2 shrink-0 rounded-xl border border-line bg-paper-2 px-3 py-2">
+            <div className="flex items-center gap-1.5">
+              <span
+                className={cx(
+                  "size-1.5 rounded-full",
+                  snapshot.phase.current === "pickup" || snapshot.phase.current === "dropoff"
+                    ? "bg-brand-600"
+                    : "bg-ink-400"
+                )}
+              />
+              <p className="text-[10.5px] font-bold tracking-wide text-ink-700 uppercase">
+                {snapshot.phase.label}
+              </p>
+            </div>
+            <p className="mt-0.5 text-[10.5px] leading-snug text-ink-600">{snapshot.phase.detail}</p>
+            <p className="num mt-1 text-[9.5px] text-ink-500">{snapshot.phase.nextEvent}</p>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-4">

@@ -215,6 +215,15 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
         {stale && <StaleBanner lastOkMs={lastOkMs} onRetry={retry} className="mb-2.5" />}
         {tab === "today" && (
           <div className="space-y-3">
+            {snapshot.phase.current === "after_service" && (
+              <div className="card p-4">
+                <p className="text-[12.5px] font-semibold">Today's runs are finished</p>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-ink-600">
+                  All children were delivered. {snapshot.phase.nextEvent.toLowerCase()}.
+                </p>
+              </div>
+            )}
+
             {!bus ? (
               <div className="card p-4">
                 <p className="text-[12.5px] font-semibold">No bus assigned</p>
