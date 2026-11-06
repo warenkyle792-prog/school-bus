@@ -67,8 +67,8 @@ gives the console something real to react to.
 ## Design language
 
 **Royal Charcoal** surfaces with a lime accent (`#c9f27a`), soft rounded cards and pill buttons. The
-map is a dark topographic style — neutral charcoal ground, faint contour lines, and a glowing accent
-route line.
+map is a photographic aerial view of Nairobi, darkened into the charcoal range, with translucent glass
+panels floating over it — the lime route line and vehicle markers are the only bright things on it.
 
 The surface scale is neutral grey, taken from the reference swatch card:
 
