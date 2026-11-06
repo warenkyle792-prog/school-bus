@@ -38,22 +38,25 @@ Open `/` for the sign-in screen (transport manager, parent, driver).
 
 ## What's in it
 
-**Operations console** — every bus on one live map with a fleet rail, KPI strip (students on board,
-on-time %, open alerts, attendance), alert triage with acknowledge, and an activity feed. Click a bus
-for a live trip sheet: stop timeline with per-stop roster, full manifest, crew contact, fuel and
-vehicle data.
+**Operations console** — the map *is* the screen: it fills the viewport from edge to edge, with a
+floating glass fleet rail on the left (fleet count, current service phase, one row per bus) and the
+route filter, legend and selected-bus card laid over the map itself. Click a bus for a live trip
+sheet: stop timeline with per-stop roster, full manifest, crew contact, fuel and vehicle data. **Add
+bus** in the header opens fleet registration.
 
-**Parent app** — scoped to one household: a guardian sees **only the buses their own children
+**Parent app** — the child's bus
+map comes first and owns the top of the screen, with the ETA/reminder card floating over it, then the
+detail cards below. Scoped to one household: a guardian sees **only the buses their own children
 ride**, never the fleet. Per child it shows the live position, a countdown to *their* pickup stop,
 boarding status and trip log. Parents can set a **5 / 10 / 15-minute pickup reminder** that fires as
 a notification when the bus is that close, and there is a **two-way emergency channel** per route so
 the driver can reach every guardian at once.
 
-**Driver app** — next stop with expected student count, tap-to-board roster that updates the school
+**Driver app** — the run map comes first, then next stop with expected student count, tap-to-board roster that updates the school
 dashboard, full manifest grouped by stop, a **Parents** tab with one-tap broadcast templates
 (delayed, traffic, almost there, breakdown), incident reporting and a panic button.
 
-**Fleet registration** — the console's **Buses** tab registers real vehicles and drivers and assigns
+**Fleet registration** — the console's **Add bus** dialog registers real vehicles and drivers and assigns
 them to routes. Registered buses join the same live GPS map as the simulated fleet, labelled `new`.
 
 **Simulated GPS** — `lib/sim.ts` moves every bus around a continuous round trip: park at the first

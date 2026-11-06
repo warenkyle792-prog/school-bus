@@ -7,6 +7,7 @@ import type { Snapshot as LiveSnapshot } from "@/lib/types";
 import { Avatar } from "@/components/ui";
 import ThemePicker, { ThemeBoot } from "@/components/ThemePicker";
 import CommsBox from "@/components/CommsBox";
+import MapCanvas from "@/components/MapCanvas";
 import { LoadingState, StaleBanner } from "@/components/LoadState";
 import { DRIVER_TEMPLATES, type CommMessage } from "@/lib/messages";
 import { cx, fmtDuration } from "@/lib/format";
@@ -87,12 +88,55 @@ export default function DriverApp({ initial }: { initial?: LiveSnapshot }) {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pb-24">
+      {/* ── Map first ──────────────────────────────────────────────── */}
+      <div className="relative min-h-[38%] flex-1 overflow-hidden border-b border-line">
+        <MapCanvas view={{ center: bus.position, zoom: 2.9 }} labels={false} className="absolute inset-0">
+          {(project) => {
+            const b = project(bus.position);
+            const n = project(matchedStop.coord);
+            const school = project(snapshot.school.coord);
+            const d = route.path
+              .map((pt, i) => {
+                const p = project(pt);
+                return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+              })
+              .join(" ");
+            return (
+              <svg width="100%" height="100%" className="absolute inset-0">
+                <path d={d} fill="none" stroke="#17181b" strokeWidth="9" strokeLinecap="round" strokeOpacity="0.7" />
+                <path d={d} fill="none" stroke={route.color} strokeWidth="3.4" strokeLinecap="round" strokeOpacity="0.9" />
+                <line x1={b.x} y1={b.y} x2={n.x} y2={n.y} stroke={route.color} strokeWidth="2" strokeDasharray="4 4" strokeOpacity="0.6" />
+                <circle cx={school.x} cy={school.y} r="6" fill="#c9f27a" stroke="#17181b" strokeWidth="2" />
+                <g>
+                  <circle cx={n.x} cy={n.y} r="13" fill="#17181b" stroke={route.color} strokeWidth="2.5" />
+                  <text x={n.x} y={n.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill={route.color}>
+                    {stopIdx + 1}
+                  </text>
+                </g>
+                <circle cx={b.x} cy={b.y} r="15" fill={route.color} opacity="0.18" />
+                <circle cx={b.x} cy={b.y} r="8.5" fill={route.color} stroke="#17181b" strokeWidth="2.5" />
+              </svg>
+            );
+          }}
+        </MapCanvas>
+
+        <div className="absolute inset-x-3 top-3 z-10 flex items-center justify-between gap-2">
+          <span className="rounded-full border border-line/80 bg-paper-2/90 px-2.5 py-1 text-[11px] font-semibold text-ink-700 backdrop-blur">
+            {bus.speedKph} kph · {bus.onBoard}/{bus.capacity} aboard
+          </span>
+          <span className="num rounded-full border border-line/80 bg-paper-2/90 px-2.5 py-1 text-[11px] font-semibold text-ink-700 backdrop-blur">
+            {fmtDuration(bus.etaSec)} to school
+          </span>
+        </div>
+
         {stale && (
-          <div className="px-4 pt-3">
+          <div className="absolute inset-x-3 bottom-3 z-20">
             <StaleBanner lastOkMs={lastOkMs} onRetry={retry} />
           </div>
         )}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto pb-24">
         {tab === "run" && (
           <div className="space-y-3 p-4">
             {/* next stop hero */}

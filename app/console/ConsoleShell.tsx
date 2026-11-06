@@ -8,7 +8,7 @@ import FleetManager from "@/components/FleetManager";
 import { LoadingState, StaleBanner } from "@/components/LoadState";
 import { useLiveSnapshot } from "@/lib/useLiveSnapshot";
 import { ThemeBoot } from "@/components/ThemePicker";
-import { Avatar, LiveBadge, OccupancyBar, Ring, RouteChip, StatusPill } from "@/components/ui";
+import { Avatar, LiveBadge, OccupancyBar, RouteChip, StatusPill } from "@/components/ui";
 import { cx, fmtDuration, relTime, signedMin } from "@/lib/format";
 import type { Bus, Snapshot } from "@/lib/types";
 
@@ -17,7 +17,7 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
   const [selectedBusId, setSelectedBusId] = useState<string | null>(null);
   const [focusRouteId, setFocusRouteId] = useState<string | null>(null);
   const [detailBusId, setDetailBusId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"fleet" | "register" | "alerts" | "log">("register");
+  const [registerOpen, setRegisterOpen] = useState(false);
 
   if (!snapshot) {
     return (
@@ -39,12 +39,18 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
   const detailBus = snapshot.buses.find((b) => b.id === detailBusId) ?? null;
 
   return (
-    <div className="flex h-dvh flex-col bg-paper">
+    <div className="relative flex h-dvh flex-col bg-paper">
       <ThemeBoot />
       <AppBar
         clock={snapshot.clockLabel}
         right={
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setRegisterOpen(true)}
+              className="rounded-full bg-brand-600 px-3 py-1.5 text-[12px] font-bold text-canvas transition hover:bg-brand-700"
+            >
+              Add bus
+            </button>
             <LiveBadge label="GPS live" />
             <div className="hidden items-center gap-2 rounded-full border border-line bg-paper-2 py-1 pr-3 pl-1 sm:flex">
               <Avatar name="Nadia Karemi" hue={150} size={22} />
@@ -54,9 +60,67 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
         }
       />
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[300px_minmax(0,1fr)_330px] lg:overflow-hidden">
-        {/* ── Fleet rail ───────────────────────────────────────────── */}
-        <aside className="flex min-h-0 max-h-[42vh] flex-col border-b border-line lg:max-h-none lg:border-r lg:border-b-0">
+      <div className="relative min-h-0 flex-1">
+        {/* ── Map stage: fills the screen, first thing you see ─────── */}
+        <div className="absolute inset-0">
+          <FleetMap
+            snapshot={snapshot}
+            selectedBusId={selectedBusId}
+            onSelect={setSelectedBusId}
+            focusRouteId={focusRouteId}
+            onFocusRoute={setFocusRouteId}
+            onOpenBus={setDetailBusId}
+          />
+        </div>
+
+        {/* map overlay: route filter, top-left on desktop (top on mobile) */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex max-w-full flex-wrap gap-1.5 p-3 lg:left-[340px] lg:max-w-none lg:p-4">
+          <div className="pointer-events-auto flex flex-wrap gap-1.5">
+            {snapshot.routes.map((r) => (
+              <RouteChip
+                key={r.id}
+                code={r.code}
+                color={r.color}
+                active={focusRouteId === r.id}
+                onClick={() => setFocusRouteId(focusRouteId === r.id ? null : r.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {stale && (
+          <div className="absolute inset-x-3 top-14 z-30 lg:left-[340px] lg:right-3 lg:top-16">
+            <StaleBanner lastOkMs={lastOkMs} onRetry={retry} />
+          </div>
+        )}
+
+        {/* map overlay: legend, bottom-right so it clears the rail */}
+        <div className="pointer-events-none absolute right-3 bottom-3 z-20 hidden items-center gap-3 rounded-full border border-line/80 bg-paper-2/90 px-3 py-1.5 backdrop-blur sm:flex lg:right-4 lg:bottom-4">
+          <span className="flex items-center gap-1.5 text-[10.5px] font-medium text-ink-600">
+            <span className="size-1.5 rounded-full bg-brand-500" /> Moving
+          </span>
+          <span className="flex items-center gap-1.5 text-[10.5px] font-medium text-ink-600">
+            <span className="size-1.5 rounded-full bg-sun-500" /> Delayed
+          </span>
+          <span className="flex items-center gap-1.5 text-[10.5px] font-medium text-ink-600">
+            <span className="size-1.5 rounded-full bg-berry-500" /> Incident
+          </span>
+          <span className="num text-[10.5px] text-ink-400">2 km</span>
+        </div>
+
+        {selected && (
+          <div className="absolute right-3 bottom-3 left-3 z-20 sm:left-auto sm:w-[330px] lg:right-4 lg:bottom-16">
+            <SelectedBusCard
+              bus={selected}
+              snapshot={snapshot}
+              onClose={() => setSelectedBusId(null)}
+              onOpen={() => setDetailBusId(selected.id)}
+            />
+          </div>
+        )}
+
+        {/* ── Fleet rail: floating glass column over the map ────────── */}
+        <aside className="absolute top-0 bottom-0 left-0 z-20 hidden w-[320px] flex-col border-r border-line/70 bg-paper/88 backdrop-blur-xl lg:flex">
           <div className="shrink-0 px-4 pt-4 pb-3">
             <div className="flex items-end justify-between">
               <div>
@@ -119,106 +183,34 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
           </div>
         </aside>
 
-        {/* ── Map ──────────────────────────────────────────────────── */}
-        <main className="relative flex min-h-[440px] flex-col p-3 lg:min-h-0 lg:p-4">
-          {stale && <StaleBanner lastOkMs={lastOkMs} onRetry={retry} className="mb-2" />}
-          <KpiStrip snapshot={snapshot} />
+      </div>
 
-          <div className="relative mt-3 min-h-0 flex-1 overflow-hidden rounded-[1.35rem] border border-line">
-            <FleetMap
-              snapshot={snapshot}
-              selectedBusId={selectedBusId}
-              onSelect={setSelectedBusId}
-              focusRouteId={focusRouteId}
-              onFocusRoute={setFocusRouteId}
-              onOpenBus={setDetailBusId}
-            />
-
-            {/* map overlay: route filter */}
-            <div className="absolute top-3 left-3 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-1.5">
-              {snapshot.routes.map((r) => (
-                <RouteChip
-                  key={r.id}
-                  code={r.code}
-                  color={r.color}
-                  active={focusRouteId === r.id}
-                  onClick={() => setFocusRouteId(focusRouteId === r.id ? null : r.id)}
-                />
-              ))}
-            </div>
-
-            {/* map overlay: legend + scale */}
-            <div className="pointer-events-none absolute bottom-3 left-3 flex items-center gap-3 rounded-full border border-line/80 bg-paper-2/90 px-3 py-1.5 backdrop-blur">
-              <span className="flex items-center gap-1.5 text-[10.5px] font-medium text-ink-600">
-                <span className="size-1.5 rounded-full bg-brand-500" /> Moving
-              </span>
-              <span className="flex items-center gap-1.5 text-[10.5px] font-medium text-ink-600">
-                <span className="size-1.5 rounded-full bg-sun-500" /> Delayed
-              </span>
-              <span className="flex items-center gap-1.5 text-[10.5px] font-medium text-ink-600">
-                <span className="size-1.5 rounded-full bg-berry-500" /> Incident
-              </span>
-              <span className="num text-[10.5px] text-ink-400">2 km</span>
-            </div>
-
-            {selected && (
-              <div className="absolute right-3 bottom-3 left-3 sm:left-auto sm:w-[330px]">
-                <SelectedBusCard
-                  bus={selected}
-                  snapshot={snapshot}
-                  onClose={() => setSelectedBusId(null)}
-                  onOpen={() => setDetailBusId(selected.id)}
-                />
-              </div>
-            )}
-          </div>
-        </main>
-
-        {/* ── Activity / alerts ───────────────────────────────────── */}
-        <aside className="flex min-h-[360px] flex-col border-t border-line lg:min-h-0 lg:border-t-0 lg:border-l">
-          <div className="flex shrink-0 gap-1 border-b border-line p-2">
-            {(["fleet", "register", "alerts", "log"] as const).map((t) => (
+      {registerOpen && (
+        <div className="absolute inset-0 z-40 flex items-end justify-center bg-canvas/70 p-0 backdrop-blur-sm sm:items-center sm:p-6">
+          <div className="flex max-h-[88vh] w-full max-w-[460px] flex-col overflow-hidden rounded-t-[1.4rem] border border-line bg-paper sm:rounded-[1.4rem]">
+            <div className="flex shrink-0 items-center justify-between border-b border-line px-4 py-3">
+              <p className="text-[13px] font-semibold">Fleet</p>
               <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={cx(
-                  "flex-1 rounded-lg px-2 py-1.5 text-[12px] font-semibold capitalize transition",
-                  tab === t ? "bg-ink-100 text-ink-900" : "text-ink-500 hover:text-ink-800"
-                )}
+                onClick={() => setRegisterOpen(false)}
+                className="rounded-full border border-line bg-paper-2 px-2.5 py-1 text-[11px] font-semibold text-ink-600"
               >
-                {t === "fleet"
-                  ? "Readiness"
-                  : t === "register"
-                    ? "Buses"
-                    : t === "alerts"
-                      ? "Alerts"
-                      : "Activity"}
-                {t === "alerts" && snapshot.kpis.openAlerts > 0 && (
-                  <span className="ml-1.5 rounded-full bg-berry-500 px-1.5 text-[10px] font-bold text-canvas">
-                    {snapshot.kpis.openAlerts}
-                  </span>
-                )}
+                Close
               </button>
-            ))}
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            {tab === "fleet" && <Readiness snapshot={snapshot} />}
-            {tab === "register" && (
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
               <FleetManager
                 snapshot={snapshot}
                 onShowOnMap={(busId) => {
+                  setRegisterOpen(false);
                   setSelectedBusId(busId);
-                  const bus = snapshot.buses.find((b) => b.id === busId);
-                  if (bus) setFocusRouteId(bus.routeId);
+                  const b = snapshot.buses.find((x) => x.id === busId);
+                  if (b) setFocusRouteId(b.routeId);
                 }}
               />
-            )}
-            {tab === "alerts" && <Alerts snapshot={snapshot} onOpenBus={setDetailBusId} />}
-            {tab === "log" && <ActivityLog snapshot={snapshot} />}
+            </div>
           </div>
-        </aside>
-      </div>
+        </div>
+      )}
 
       {detailBus && (
         <BusDetail
@@ -232,62 +224,6 @@ export default function ConsoleShell({ initial }: { initial?: Snapshot }) {
 }
 
 /* ────────────────────────────────────────────────────────────── */
-
-function KpiStrip({ snapshot }: { snapshot: Snapshot }) {
-  const { kpis } = snapshot;
-  const items = [
-    {
-      label: "Students on board",
-      value: kpis.studentsOnBoard,
-      suffix: `/ ${kpis.studentsTotal}`,
-      ring: Math.round((kpis.studentsOnBoard / kpis.studentsTotal) * 100),
-    },
-    {
-      label: "On time",
-      value: `${kpis.onTimePct}%`,
-      suffix: kpis.avgDelaySec > 0 ? `avg +${Math.round(kpis.avgDelaySec / 60)} min` : "no delays",
-      ring: kpis.onTimePct,
-      tone: kpis.onTimePct >= 80 ? "brand" : "sun",
-    },
-    {
-      label: "Open alerts",
-      value: kpis.openAlerts,
-      suffix: kpis.openAlerts === 0 ? "all clear" : kpis.openAlerts === 1 ? "needs action" : "need action",
-      ring: kpis.openAlerts === 0 ? 100 : 100 - kpis.openAlerts * 22,
-      tone: kpis.openAlerts > 0 ? "berry" : "brand",
-    },
-    {
-      label: "Attendance",
-      value: `${kpis.attendancePct}%`,
-      suffix: "confirmed today",
-      ring: kpis.attendancePct,
-    },
-  ] as const;
-
-  return (
-    <div className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4">
-      {items.map((it) => (
-        <div key={it.label} className="card flex items-center gap-3 px-3.5 py-2.5">
-          <Ring
-            value={it.ring}
-            size={38}
-            stroke={4}
-            color={
-              ("tone" in it && it.tone === "berry") ? "#ec4d68" : ("tone" in it && it.tone === "sun") ? "#f0a63f" : "#c9f27a"
-            }
-          />
-          <div className="min-w-0">
-            <p className="truncate text-[10.5px] font-semibold tracking-wide text-ink-500 uppercase">{it.label}</p>
-            <p className="num text-[17px] leading-tight font-semibold">
-              {it.value}
-              <span className="ml-1 text-[11px] font-normal text-ink-400">{it.suffix}</span>
-            </p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function BusRow({
   bus,
@@ -469,148 +405,6 @@ function Row({ label, value, extra }: { label: string; value: string; extra?: st
         {value}
         {extra && <span className="num ml-1.5 text-[10.5px] font-normal text-ink-400">{extra}</span>}
       </span>
-    </div>
-  );
-}
-
-function Alerts({ snapshot, onOpenBus }: { snapshot: Snapshot; onOpenBus: (id: string) => void }) {
-  const [ack, setAck] = useState<Record<string, boolean>>({});
-  return (
-    <div className="space-y-2">
-      {snapshot.alerts.map((a) => {
-        const route = snapshot.routes.find((r) => r.id === a.routeId);
-        const done = a.acknowledged || ack[a.id];
-        const tone =
-          a.severity === "critical"
-            ? { bg: "bg-berry-100", text: "text-berry-600", dot: "bg-berry-500", label: "Critical" }
-            : a.severity === "warning"
-              ? { bg: "bg-sun-100", text: "text-sun-600", dot: "bg-sun-500", label: "Warning" }
-              : { bg: "bg-ink-100", text: "text-ink-600", dot: "bg-ink-400", label: "Info" };
-
-        return (
-          <div key={a.id} className={cx("rounded-xl border p-2.5", done ? "border-line/70 bg-paper-2/60" : "border-berry-500/25 bg-berry-100/40")}>
-            <div className="flex items-center justify-between gap-2">
-              <span className={cx("inline-flex items-center gap-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase", tone.bg, tone.text)}>
-                <span className={cx("size-1.5 rounded-full", tone.dot)} />
-                {tone.label}
-              </span>
-              <span className="num text-[10px] text-ink-400">{relTime(a.atSec, snapshot.simSec)}</span>
-            </div>
-            <p className="mt-1.5 text-[12.5px] leading-snug font-semibold">{a.title}</p>
-            <p className="mt-0.5 text-[11px] leading-relaxed text-ink-500">{a.body}</p>
-            <div className="mt-2 flex items-center gap-1.5">
-              <button
-                onClick={() => onOpenBus(a.busId)}
-                className="rounded-md border border-line bg-paper-2 px-2 py-1 text-[10.5px] font-semibold text-ink-700 hover:border-ink-300"
-              >
-                {route?.code ?? "Bus"} trip sheet
-              </button>
-              {!done && (
-                <button
-                  onClick={() => setAck((p) => ({ ...p, [a.id]: true }))}
-                  className="rounded-full bg-brand-600 px-2.5 py-1 text-[10.5px] font-bold text-canvas hover:bg-brand-500"
-                >
-                  Acknowledge
-                </button>
-              )}
-              {done && <span className="text-[10.5px] text-ink-400">Acknowledged</span>}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function ActivityLog({ snapshot }: { snapshot: Snapshot }) {
-  return (
-    <ol className="relative space-y-0.5">
-      {snapshot.events.map((ev, i) => {
-        const bus = snapshot.buses.find((b) => b.id === ev.busId);
-        const route = snapshot.routes.find((r) => r.id === bus?.routeId);
-        const tone =
-          ev.kind === "board" ? "bg-brand-500" : ev.kind === "drop" ? "bg-sky-500" : ev.kind === "alert" ? "bg-berry-500" : "bg-ink-300";
-        return (
-          <li key={`${ev.id}-${i}`} className="relative flex gap-2.5 pb-3 pl-1">
-            <span className="relative mt-1.5 flex w-2 shrink-0 justify-center">
-              {i !== snapshot.events.length - 1 && (
-                <span className="absolute top-2 bottom-[-14px] w-px bg-line" />
-              )}
-              <span className={cx("size-1.5 rounded-full", tone)} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11.5px] leading-snug text-ink-800">{ev.text}</p>
-              <p className="num mt-0.5 text-[10px] text-ink-400">
-                {route?.code} · {relTime(ev.atSec, snapshot.simSec)}
-              </p>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function Readiness({ snapshot }: { snapshot: Snapshot }) {
-  const fuel = snapshot.buses.length
-    ? snapshot.buses.reduce((a, b) => a + b.fuelPct, 0) / snapshot.buses.length
-    : 0;
-  return (
-    <div className="space-y-2.5">
-      <div className="card p-3">
-        <p className="label">Fleet readiness</p>
-        <div className="mt-2.5 space-y-2.5">
-          {snapshot.buses.map((b) => {
-            const route = snapshot.routes.find((r) => r.id === b.routeId)!;
-            return (
-              <div key={b.id}>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <span className="font-semibold text-ink-800">{route.code}</span>
-                    <span className="num truncate text-[10px] text-ink-500">{b.plate}</span>
-                    {b.registered && (
-                      <span className="rounded-full bg-brand-100 px-1 text-[8.5px] font-bold tracking-wide text-brand-600 uppercase">
-                        new
-                      </span>
-                    )}
-                  </span>
-                  <span className="num text-ink-500">{b.fuelPct}% fuel</span>
-                </div>
-                <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-ink-100">
-                  <div
-                    className={cx("h-full rounded-full", b.fuelPct < 45 ? "bg-sun-500" : "bg-brand-500")}
-                    style={{ width: `${b.fuelPct}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <p className="mt-3 border-t border-line pt-2 text-[10.5px] text-ink-500">
-          Average tank {Math.round(fuel)}% · all vehicles serviced this term
-        </p>
-      </div>
-
-      <div className="card p-3">
-        <p className="label">Crew on duty</p>
-        <div className="mt-2 space-y-2">
-          {snapshot.drivers.map((d) => {
-            const att = snapshot.attendants.find((a) => a.id === snapshot.buses.find((b) => b.driverId === d.id)?.attendantId);
-            return (
-              <div key={d.id} className="flex items-center gap-2">
-                <Avatar name={d.name} hue={d.avatarHue} size={26} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11.5px] font-semibold text-ink-800">{d.name}</p>
-                  <p className="truncate text-[10px] text-ink-500">
-                    {d.yearsExp} yrs · {att ? att.name.split(" ")[0] : "available"}
-                  </p>
-                </div>
-                <span className="size-1.5 shrink-0 rounded-full bg-brand-500" />
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

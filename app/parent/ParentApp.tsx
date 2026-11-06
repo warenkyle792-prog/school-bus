@@ -210,307 +210,307 @@ export default function ParentApp({ initial }: { initial?: LiveSnapshot }) {
         })}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-4 pb-24">
-        {stale && <StaleBanner lastOkMs={lastOkMs} onRetry={retry} className="mb-2.5" />}
-        {tab === "today" && (
-          <div className="space-y-3">
-            {snapshot.phase.current === "after_service" && (
-              <div className="card p-4">
-                <p className="text-[12.5px] font-semibold">Today's runs are finished</p>
-                </div>
-            )}
+      {/* ── Map first: it owns the top of the screen ─────────────── */}
+      <div className="relative min-h-[45%] flex-1 overflow-hidden">
+        {bus ? (
+          <>
+            <MapCanvas view={{ center: bus.position, zoom: 2.9 }} labels={false} className="absolute inset-0">
+                  {(project) => {
+                    const b = project(bus.position);
+                    const s = project(stop.coord);
+                    const school = project(snapshot.school.coord);
+                    const d = route.path
+                      .map((pt, i) => {
+                        const p = project(pt);
+                        return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+                      })
+                      .join(" ");
+                    return (
+                      <svg width="100%" height="100%" className="absolute inset-0">
+                        <path d={d} fill="none" stroke="#17181b" strokeWidth="9" strokeLinecap="round" strokeOpacity="0.7" />
+                        <path d={d} fill="none" stroke={route.color} strokeWidth="3.4" strokeLinecap="round" strokeOpacity="0.9" />
+                        <line x1={b.x} y1={b.y} x2={s.x} y2={s.y} stroke={route.color} strokeWidth="2" strokeDasharray="4 4" strokeOpacity="0.6" />
+                        <circle cx={school.x} cy={school.y} r="6" fill="#c9f27a" stroke="#17181b" strokeWidth="2" />
+                        <g>
+                          <circle cx={s.x} cy={s.y} r="13" fill="#17181b" stroke={route.color} strokeWidth="2.5" />
+                          <text x={s.x} y={s.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill={route.color}>
+                            {child.name[0]}
+                          </text>
+                        </g>
+                        <circle cx={b.x} cy={b.y} r="15" fill={route.color} opacity="0.18" />
+                        <circle cx={b.x} cy={b.y} r="8.5" fill={route.color} stroke="#17181b" strokeWidth="2.5" />
+                      </svg>
+                    );
+                  }}
+            </MapCanvas>
 
-            {!bus ? (
-              <div className="card p-4">
-                <p className="text-[12.5px] font-semibold">No bus assigned</p>
-                <p className="mt-1 text-[11.5px] text-ink-600">
-                  {snapshot.school.name} hasn't assigned {child.name.split(" ")[0]} to a bus yet.
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* map + ETA */}
-                <div className="card overflow-hidden">
-                  <div className="h-[186px]">
-                    <MapCanvas view={{ center: bus.position, zoom: 3.1 }} labels={false} className="h-full w-full">
-                      {(project) => {
-                        const b = project(bus.position);
-                        const s = project(stop.coord);
-                        const school = project(snapshot.school.coord);
-                        const d = route.path
-                          .map((pt, i) => {
-                            const p = project(pt);
-                            return `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
-                          })
-                          .join(" ");
-                        return (
-                          <svg width="100%" height="100%" className="absolute inset-0">
-                            <path d={d} fill="none" stroke="#17181b" strokeWidth="9" strokeLinecap="round" strokeOpacity="0.7" />
-                            <path d={d} fill="none" stroke={route.color} strokeWidth="3.4" strokeLinecap="round" strokeOpacity="0.9" />
-                            <line x1={b.x} y1={b.y} x2={s.x} y2={s.y} stroke={route.color} strokeWidth="2" strokeDasharray="4 4" strokeOpacity="0.6" />
-                            <circle cx={school.x} cy={school.y} r="6" fill="#c9f27a" stroke="#17181b" strokeWidth="2" />
-                            <g>
-                              <circle cx={s.x} cy={s.y} r="13" fill="#17181b" stroke={route.color} strokeWidth="2.5" />
-                              <text x={s.x} y={s.y + 3.5} textAnchor="middle" fontSize="9" fontWeight="700" fill={route.color}>
-                                {child.name[0]}
-                              </text>
-                            </g>
-                            <circle cx={b.x} cy={b.y} r="15" fill={route.color} opacity="0.18" />
-                            <circle cx={b.x} cy={b.y} r="8.5" fill={route.color} stroke="#17181b" strokeWidth="2.5" />
-                          </svg>
-                        );
-                      }}
-                    </MapCanvas>
-                  </div>
-
-                  <div className="border-t border-line px-4 py-3.5">
-                    <div className="rounded-2xl border border-brand-600/25 bg-brand-100 px-3.5 py-3">
-                      <div className="flex items-center justify-between">
-                        <LiveBadge label={bus.status === "offline" ? "Off GPS" : "Live tracking"} />
-                        <span className="num text-[10px] font-medium text-brand-600">
-                          {route.code} · {bus.plate}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 flex items-end justify-between">
-                        <div>
-                          <p className="text-[10px] font-bold tracking-wide text-brand-600 uppercase">
-                            {!eta?.ahead
-                              ? child.boardStatus === "onboard"
-                                ? "Your child is on the bus"
-                                : "Picked up"
-                              : `Arrives ${stop.name}`}
-                          </p>
-                          <p className="num text-[30px] leading-none font-semibold text-brand-600">
-                            {mins ?? "--"}
-                            <span className="ml-1 text-[13px] font-medium">{mins ? "min" : ""}</span>
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="num text-[11px] font-semibold text-ink-700">
-                            {eta?.distanceM ? `${(eta.distanceM / 1000).toFixed(1)} km away` : "at your stop"}
-                          </p>
-                          <p className="num text-[10.5px] text-ink-600">
-                            {bus.delaySec > 120 ? `+${Math.round(bus.delaySec / 60)} min late` : "on schedule"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* ── reminder control ─────────────────────────────── */}
-                    <div className="mt-2.5 rounded-2xl border border-line bg-paper px-3 py-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <BellIcon className="size-3.5 text-brand-600" />
-                          <p className="text-[10.5px] font-bold tracking-wide text-ink-700 uppercase">
-                            Pickup reminder
-                          </p>
-                        </div>
-                        {lead && (
-                          <button
-                            onClick={() => {
-                              setLeadByChild((p) => {
-                                const n = { ...p };
-                                delete n[child.id];
-                                return n;
-                              });
-                              setNotified((p) => ({ ...p, [child.id]: false }));
-                            }}
-                            className="text-[10px] text-ink-500 underline decoration-line underline-offset-2"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-
-                      {!lead ? (
-                        <>
-                          <div className="mt-2 flex gap-1.5">
-                            {LEAD_OPTIONS.map((m) => (
-                              <button
-                                key={m}
-                                onClick={() => {
-                                  setLeadByChild((p) => ({ ...p, [child.id]: m }));
-                                  setNotified((p) => ({ ...p, [child.id]: false }));
-                                  setToast(`Reminder set for ${m} min before arrival.`);
-                                  setTimeout(() => setToast(null), 5000);
-                                }}
-                                className="flex-1 rounded-full border border-brand-600/30 bg-brand-100 py-1.5 text-[11px] font-bold text-brand-600 transition hover:bg-brand-200"
-                              >
-                                {m} min
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="mt-1.5">
-                          <p className="text-[11.5px] leading-snug font-semibold text-ink-900">
-                            {reminder?.state === "due" || reminder?.state === "fired"
-                              ? "🔔 Go to the pickup point"
-                              : reminder?.state === "offline"
-                                ? "Paused — bus offline"
-                                : reminder?.state === "passed"
-                                  ? "Bus passed this stop"
-                                  : `${reminder?.message ?? "Scheduled"}`}
-                          </p>
-                          <div className="mt-1.5 flex items-center gap-1.5">
-                            {LEAD_OPTIONS.map((m) => (
-                              <button
-                                key={m}
-                                onClick={() => {
-                                  setLeadByChild((p) => ({ ...p, [child.id]: m }));
-                                  setNotified((p) => ({ ...p, [child.id]: false }));
-                                }}
-                                className={cx(
-                                  "rounded-full px-2 py-0.5 text-[10px] font-semibold transition",
-                                  m === lead
-                                    ? "bg-brand-600 text-canvas"
-                                    : "border border-line text-ink-600 hover:border-ink-300"
-                                )}
-                              >
-                                {m} min
-                              </button>
-                            ))}
-                            <span className="ml-auto num text-[10px] text-ink-500">
-                              {reminder?.state === "scheduled" && reminder.firesInSec !== null
-                                ? `fires in ${Math.max(1, Math.ceil(reminder.firesInSec / 60))}m`
-                                : ""}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-2.5 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Avatar name={driver?.name ?? "Unassigned"} hue={driver?.avatarHue ?? 30} size={24} />
-                        <p className="text-[11px] text-ink-600">
-                          {driver?.name ?? "Driver not assigned"}
-                          {attendantName ? ` · ${attendantName.split(" ")[0]}` : ""}
-                        </p>
-                      </div>
-                      <StatusPill status={bus.status} size="sm" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* child status */}
-                <div className="card p-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar name={child.name} hue={child.avatarHue} size={44} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[14px] font-semibold">{child.name}</p>
-                      <p className="text-[11.5px] text-ink-600">
-                        {child.grade} {child.class} · {stop.name}
-                      </p>
-                    </div>
-                    <span
-                      className={cx(
-                        "rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                        child.boardStatus === "onboard"
-                          ? "bg-brand-100 text-brand-600"
-                          : child.boardStatus === "dropped"
-                            ? "bg-sky-100 text-sky-600"
-                            : "bg-ink-100 text-ink-600"
-                      )}
-                    >
-                      {child.boardStatus === "onboard"
-                        ? "On the bus"
-                        : child.boardStatus === "dropped"
-                          ? "Dropped off"
-                          : "Waiting pickup"}
+            {/* ETA + reminder float over the map */}
+            <div className="absolute inset-x-3 bottom-3 z-10">
+                <div className="rounded-2xl border border-brand-600/25 bg-brand-100 px-3.5 py-3">
+                  <div className="flex items-center justify-between">
+                    <LiveBadge label={bus.status === "offline" ? "Off GPS" : "Live tracking"} />
+                    <span className="num text-[10px] font-medium text-brand-600">
+                      {route.code} · {bus.plate}
                     </span>
                   </div>
 
-                  <div className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3">
-                    <MiniStat label="Pickup stop" value={stop.name.split(" ").slice(0, 2).join(" ")} />
-                    <MiniStat label="To school" value={fmtDuration(bus.etaSec)} />
-                    <MiniStat label="Bus" value={bus.plate} />
+                  <div className="mt-2 flex items-end justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold tracking-wide text-brand-600 uppercase">
+                        {!eta?.ahead
+                          ? child.boardStatus === "onboard"
+                            ? "Your child is on the bus"
+                            : "Picked up"
+                          : `Arrives ${stop.name}`}
+                      </p>
+                      <p className="num text-[30px] leading-none font-semibold text-brand-600">
+                        {mins ?? "--"}
+                        <span className="ml-1 text-[13px] font-medium">{mins ? "min" : ""}</span>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="num text-[11px] font-semibold text-ink-700">
+                        {eta?.distanceM ? `${(eta.distanceM / 1000).toFixed(1)} km away` : "at your stop"}
+                      </p>
+                      <p className="num text-[10.5px] text-ink-600">
+                        {bus.delaySec > 120 ? `+${Math.round(bus.delaySec / 60)} min late` : "on schedule"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-
-                {/* buses on this household only */}
-                <div className="card p-3.5">
+                {/* ── reminder control ─────────────────────────────── */}
+                <div className="mt-2.5 rounded-2xl border border-line bg-paper px-3 py-2.5">
                   <div className="flex items-center justify-between">
-                    <p className="label">Your buses</p>
-                    <span className="num text-[10px] text-ink-500">{myBuses.length} assigned</span>
+                    <div className="flex items-center gap-1.5">
+                      <BellIcon className="size-3.5 text-brand-600" />
+                      <p className="text-[10.5px] font-bold tracking-wide text-ink-700 uppercase">
+                        Pickup reminder
+                      </p>
+                    </div>
+                    {lead && (
+                      <button
+                        onClick={() => {
+                          setLeadByChild((p) => {
+                            const n = { ...p };
+                            delete n[child.id];
+                            return n;
+                          });
+                          setNotified((p) => ({ ...p, [child.id]: false }));
+                        }}
+                        className="text-[10px] text-ink-500 underline decoration-line underline-offset-2"
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
-                  <div className="mt-2 space-y-1.5">
-                    {myBuses.map((b) => {
-                      const r = snapshot.routes.find((x) => x.id === b.routeId)!;
-                      const owners = myChildren.filter((c) => c.busId === b.id);
-                      return (
-                        <div key={b.id} className="flex items-center gap-2 rounded-lg bg-ink-50 px-2 py-1.5">
-                          <span className="size-2 rounded-full" style={{ background: r.color }} />
-                          <div className="min-w-0 flex-1">
-                            <p className="num truncate text-[11px] font-semibold text-ink-800">{b.plate}</p>
-                            <p className="truncate text-[10px] text-ink-500">
-                              {r.code} · {owners.map((o) => o.name.split(" ")[0]).join(", ")}
-                            </p>
-                          </div>
-                          <StatusPill status={b.status} size="sm" />
-                        </div>
-                      );
-                    })}
-                  </div>
+
+                  {!lead ? (
+                    <>
+                      <div className="mt-2 flex gap-1.5">
+                        {LEAD_OPTIONS.map((m) => (
+                          <button
+                            key={m}
+                            onClick={() => {
+                              setLeadByChild((p) => ({ ...p, [child.id]: m }));
+                              setNotified((p) => ({ ...p, [child.id]: false }));
+                              setToast(`Reminder set for ${m} min before arrival.`);
+                              setTimeout(() => setToast(null), 5000);
+                            }}
+                            className="flex-1 rounded-full border border-brand-600/30 bg-brand-100 py-1.5 text-[11px] font-bold text-brand-600 transition hover:bg-brand-200"
+                          >
+                            {m} min
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-1.5">
+                      <p className="text-[11.5px] leading-snug font-semibold text-ink-900">
+                        {reminder?.state === "due" || reminder?.state === "fired"
+                          ? "🔔 Go to the pickup point"
+                          : reminder?.state === "offline"
+                            ? "Paused — bus offline"
+                            : reminder?.state === "passed"
+                              ? "Bus passed this stop"
+                              : `${reminder?.message ?? "Scheduled"}`}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        {LEAD_OPTIONS.map((m) => (
+                          <button
+                            key={m}
+                            onClick={() => {
+                              setLeadByChild((p) => ({ ...p, [child.id]: m }));
+                              setNotified((p) => ({ ...p, [child.id]: false }));
+                            }}
+                            className={cx(
+                              "rounded-full px-2 py-0.5 text-[10px] font-semibold transition",
+                              m === lead
+                                ? "bg-brand-600 text-canvas"
+                                : "border border-line text-ink-600 hover:border-ink-300"
+                            )}
+                          >
+                            {m} min
+                          </button>
+                        ))}
+                        <span className="ml-auto num text-[10px] text-ink-500">
+                          {reminder?.state === "scheduled" && reminder.firesInSec !== null
+                            ? `fires in ${Math.max(1, Math.ceil(reminder.firesInSec / 60))}m`
+                            : ""}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </>
+                <div className="mt-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Avatar name={driver?.name ?? "Unassigned"} hue={driver?.avatarHue ?? 30} size={24} />
+                    <p className="text-[11px] text-ink-600">
+                      {driver?.name ?? "Driver not assigned"}
+                      {attendantName ? ` · ${attendantName.split(" ")[0]}` : ""}
+                    </p>
+                  </div>
+                  <StatusPill status={bus.status} size="sm" />
+                </div>
+              </div>
+          </>
+        ) : (
+          <div className="grid h-full place-items-center bg-paper-2/40 p-6 text-center">
+            <p className="text-[12.5px] font-semibold text-ink-600">No bus assigned</p>
+          </div>
+        )}
+
+        {stale && (
+          <div className="absolute inset-x-3 top-3 z-20">
+            <StaleBanner lastOkMs={lastOkMs} onRetry={retry} />
+          </div>
+        )}
+      </div>
+
+      {/* ── Details below the map ─────────────────────────────────── */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-24">
+        {tab === "today" && (
+          <div className="space-y-3">
+            {snapshot.phase.current === "after_service" && (
+              <div className="card px-4 py-2.5">
+                <p className="text-[12px] font-semibold">Today's runs are finished</p>
+              </div>
             )}
+            {/* child status */}
+            <div className="card p-4">
+              <div className="flex items-center gap-3">
+                <Avatar name={child.name} hue={child.avatarHue} size={44} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-semibold">{child.name}</p>
+                  <p className="text-[11.5px] text-ink-600">
+                    {child.grade} {child.class} · {stop.name}
+                  </p>
+                </div>
+                <span
+                  className={cx(
+                    "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                    child.boardStatus === "onboard"
+                      ? "bg-brand-100 text-brand-600"
+                      : child.boardStatus === "dropped"
+                        ? "bg-sky-100 text-sky-600"
+                        : "bg-ink-100 text-ink-600"
+                  )}
+                >
+                  {child.boardStatus === "onboard"
+                    ? "On the bus"
+                    : child.boardStatus === "dropped"
+                      ? "Dropped off"
+                      : "Waiting pickup"}
+                </span>
+              </div>
+
+              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3">
+                <MiniStat label="Pickup stop" value={stop.name.split(" ").slice(0, 2).join(" ")} />
+                <MiniStat label="To school" value={bus ? fmtDuration(bus.etaSec) : "--"} />
+                <MiniStat label="Bus" value={bus?.plate ?? "None"} />
+              </div>
+            </div>
+
+            {/* buses on this household only */}
+            <div className="card p-3.5">
+              <div className="flex items-center justify-between">
+                <p className="label">Your buses</p>
+                <span className="num text-[10px] text-ink-500">{myBuses.length} assigned</span>
+              </div>
+              <div className="mt-2 space-y-1.5">
+                {myBuses.map((b) => {
+                  const r = snapshot.routes.find((x) => x.id === b.routeId)!;
+                  const owners = myChildren.filter((c) => c.busId === b.id);
+                  return (
+                    <div key={b.id} className="flex items-center gap-2 rounded-lg bg-ink-50 px-2 py-1.5">
+                      <span className="size-2 rounded-full" style={{ background: r.color }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="num truncate text-[11px] font-semibold text-ink-800">{b.plate}</p>
+                        <p className="truncate text-[10px] text-ink-500">
+                          {r.code} · {owners.map((o) => o.name.split(" ")[0]).join(", ")}
+                        </p>
+                      </div>
+                      <StatusPill status={b.status} size="sm" />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
         {tab === "chat" && (
-          <CommsBox
-            routeId={route.id}
-            routeCode={route.code}
-            guardianName={guardian?.name ?? "Parent"}
-            driverName={driver?.name ?? "Driver"}
-            simSec={snapshot.simSec}
-            canMessage
-          />
+      <CommsBox
+        routeId={route.id}
+        routeCode={route.code}
+        guardianName={guardian?.name ?? "Parent"}
+        driverName={driver?.name ?? "Driver"}
+        simSec={snapshot.simSec}
+        canMessage
+      />
+    )}
+
+    {tab === "alerts" && (
+      <div className="space-y-2">
+        {routeAlerts.length === 0 && (
+          <p className="px-2 py-8 text-center text-[12px] text-ink-500">
+            No alerts for this route today.
+          </p>
         )}
-
-        {tab === "alerts" && (
-          <div className="space-y-2">
-            {routeAlerts.length === 0 && (
-              <p className="px-2 py-8 text-center text-[12px] text-ink-500">
-                No alerts for this route today.
-              </p>
-            )}
-            {routeAlerts.map((a) => (
-              <div key={a.id} className="card p-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold tracking-wide text-ink-500 uppercase">
-                    {a.kind.replace("_", " ")}
-                  </span>
-                  <span className="num text-[10px] text-ink-500">{a.severity}</span>
-                </div>
-                <p className="mt-1.5 text-[12.5px] font-semibold">{a.title}</p>
-                <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-600">{a.body}</p>
-              </div>
-            ))}
-
-            <div className="card p-3.5">
-              <p className="label">Today's trip log</p>
-              <ul className="mt-2 space-y-2">
-                {snapshot.events
-                  .filter((e) => e.busId === child.busId)
-                  .slice(0, 6)
-                  .map((e, i) => (
-                    <li key={`${e.id}-${i}`} className="flex gap-2">
-                      <span
-                        className={cx(
-                          "mt-1.5 size-1.5 shrink-0 rounded-full",
-                          e.kind === "board" ? "bg-brand-500" : "bg-ink-400"
-                        )}
-                      />
-                      <p className="text-[11.5px] leading-snug text-ink-600">{e.text}</p>
-                    </li>
-                  ))}
-              </ul>
+        {routeAlerts.map((a) => (
+          <div key={a.id} className="card p-3.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold tracking-wide text-ink-500 uppercase">
+                {a.kind.replace("_", " ")}
+              </span>
+              <span className="num text-[10px] text-ink-500">{a.severity}</span>
             </div>
+            <p className="mt-1.5 text-[12.5px] font-semibold">{a.title}</p>
+            <p className="mt-0.5 text-[11.5px] leading-relaxed text-ink-600">{a.body}</p>
+          </div>
+        ))}
+
+        <div className="card p-3.5">
+          <p className="label">Today's trip log</p>
+          <ul className="mt-2 space-y-2">
+            {snapshot.events
+              .filter((e) => e.busId === child.busId)
+              .slice(0, 6)
+              .map((e, i) => (
+                <li key={`${e.id}-${i}`} className="flex gap-2">
+                  <span
+                    className={cx(
+                      "mt-1.5 size-1.5 shrink-0 rounded-full",
+                      e.kind === "board" ? "bg-brand-500" : "bg-ink-400"
+                    )}
+                  />
+                  <p className="text-[11.5px] leading-snug text-ink-600">{e.text}</p>
+                </li>
+              ))}
+          </ul>
+        </div>
           </div>
         )}
+
       </div>
 
       {/* toast */}
